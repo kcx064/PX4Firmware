@@ -578,12 +578,12 @@ Mission::set_mission_items()
 	bool user_feedback_done = false;
 
 	/* mission item that comes after current if available */
-	struct mission_item_s mission_item_next_position;
+	//struct mission_item_s _mission_item_next_position;
 	bool has_next_position_item = false;
 
 	work_item_type new_work_item_type = WORK_ITEM_TYPE_DEFAULT;
 
-	if (prepare_mission_items(&_mission_item, &mission_item_next_position, &has_next_position_item)) {
+	if (prepare_mission_items(&_mission_item, &_mission_item_next_position, &has_next_position_item)) {
 		/* if mission type changed, notify */
 		if (_mission_type != MISSION_TYPE_OFFBOARD) {
 			mavlink_log_info(_navigator->get_mavlink_log_pub(),
@@ -625,6 +625,7 @@ Mission::set_mission_items()
 		position_setpoint_triplet_s *pos_sp_triplet = _navigator->get_position_setpoint_triplet();
 		pos_sp_triplet->previous.valid = false;
 		mission_apply_limitation(_mission_item);
+		printf("set_mission_items to pos_sp current \n");
 		mission_item_to_position_setpoint(_mission_item, &pos_sp_triplet->current);
 		pos_sp_triplet->next.valid = false;
 
@@ -682,8 +683,8 @@ Mission::set_mission_items()
 					new_work_item_type = WORK_ITEM_TYPE_TAKEOFF;
 
 					/* use current mission item as next position item */
-					mission_item_next_position = _mission_item;
-					mission_item_next_position.nav_cmd = NAV_CMD_WAYPOINT;
+					_mission_item_next_position = _mission_item;
+					_mission_item_next_position.nav_cmd = NAV_CMD_WAYPOINT;
 					has_next_position_item = true;
 
 					float takeoff_alt = calculate_takeoff_altitude(&_mission_item);
@@ -786,7 +787,7 @@ Mission::set_mission_items()
 					new_work_item_type = WORK_ITEM_TYPE_MOVE_TO_LAND;
 
 					/* use current mission item as next position item */
-					mission_item_next_position = _mission_item;
+					_mission_item_next_position = _mission_item;
 					has_next_position_item = true;
 
 					float altitude = _navigator->get_global_position()->alt;
@@ -824,7 +825,7 @@ Mission::set_mission_items()
 					new_work_item_type = WORK_ITEM_TYPE_MOVE_TO_LAND;
 
 					/* use current mission item as next position item */
-					mission_item_next_position = _mission_item;
+					_mission_item_next_position = _mission_item;
 					has_next_position_item = true;
 
 					/*
@@ -936,11 +937,11 @@ Mission::set_mission_items()
 
 					new_work_item_type = WORK_ITEM_TYPE_ALIGN;
 
-					set_align_mission_item(&_mission_item, &mission_item_next_position);
+					set_align_mission_item(&_mission_item, &_mission_item_next_position);
 
 					/* set position setpoint to target during the transition */
 					mission_apply_limitation(_mission_item);
-					mission_item_to_position_setpoint(mission_item_next_position, &pos_sp_triplet->current);
+					mission_item_to_position_setpoint(_mission_item_next_position, &pos_sp_triplet->current);
 				}
 
 				/* yaw is aligned now */
@@ -1035,8 +1036,8 @@ Mission::set_mission_items()
 		/* try to process next mission item */
 		if (has_next_position_item) {
 			/* got next mission item, update setpoint triplet */
-			mission_apply_limitation(mission_item_next_position);
-			mission_item_to_position_setpoint(mission_item_next_position, &pos_sp_triplet->next);
+			mission_apply_limitation(_mission_item_next_position);
+			mission_item_to_position_setpoint(_mission_item_next_position, &pos_sp_triplet->next);
 
 		} else {
 			/* next mission item is not available */
@@ -1054,6 +1055,27 @@ Mission::set_mission_items()
 		_distance_current_previous = get_distance_to_next_waypoint(
 						     pos_sp_triplet->current.lat, pos_sp_triplet->current.lon,
 						     pos_sp_triplet->previous.lat, pos_sp_triplet->previous.lon);
+
+		if (_distance_current_previous <= (2.0f * pos_sp_triplet->previous.acceptance_radius)) {
+			_mission_item.acceptance_radius = _distance_current_previous / 2.0f;
+			mission_item_to_position_setpoint(_mission_item, &pos_sp_triplet->current);
+		}
+	}
+
+	if (pos_sp_triplet->current.valid && pos_sp_triplet->next.valid) {
+
+		float distance_current_next = get_distance_to_next_waypoint(
+						     pos_sp_triplet->current.lat, pos_sp_triplet->current.lon,
+						     pos_sp_triplet->next.lat, pos_sp_triplet->next.lon);
+
+
+		if (distance_current_next < pos_sp_triplet->current.acceptance_radius) {
+			_mission_item.acceptance_radius = distance_current_next / 2.0f;
+			mission_item_to_position_setpoint(_mission_item, &pos_sp_triplet->current);
+
+			_mission_item_next_position.acceptance_radius = distance_current_next / 2.0f;
+			mission_item_to_position_setpoint(_mission_item_next_position, &pos_sp_triplet->next);
+		}
 	}
 
 	_navigator->set_position_setpoint_triplet_updated();

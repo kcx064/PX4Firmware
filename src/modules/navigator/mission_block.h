@@ -124,6 +124,7 @@ protected:
 	float get_absolute_altitude_for_item(struct mission_item_s &mission_item) const;
 
 	mission_item_s _mission_item{};
+	mission_item_s _mission_item_next_position{};
 
 	bool _waypoint_position_reached{false};
 	bool _waypoint_yaw_reached{false};
