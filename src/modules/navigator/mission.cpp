@@ -812,12 +812,13 @@ Mission::set_mission_items()
 
 					set_vtol_transition_item(&_mission_item, vtol_vehicle_status_s::VEHICLE_VTOL_STATE_MC);
 
+					_navigator->get_position_setpoint_triplet()->current.valid = false;
+
 					new_work_item_type = WORK_ITEM_TYPE_MOVE_TO_LAND_AFTER_TRANSITION;
 				}
 
 				/* move to landing waypoint before descent if necessary */
-				if (do_need_move_to_land() &&
-				    (_work_item_type == WORK_ITEM_TYPE_DEFAULT ||
+				if ((_work_item_type == WORK_ITEM_TYPE_DEFAULT ||
 				     _work_item_type == WORK_ITEM_TYPE_MOVE_TO_LAND_AFTER_TRANSITION) &&
 				    new_work_item_type == WORK_ITEM_TYPE_DEFAULT) {
 
