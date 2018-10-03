@@ -38,6 +38,8 @@
 #include <lib/drivers/gyroscope/Gyro.hpp>
 #include <lib/drivers/magnetometer/Mag.hpp>
 
+#include <mathlib/math/filter/LowPassFilter2p.hpp>
+
 #include <ecl/geo/geo.h>
 
 #include <perf/perf_counter.h>
@@ -135,7 +137,7 @@
 #define ACCEL_SCALE ACCEL_FS_RANGE_M_S2 / 65535
 
 #define GYRO_SAMPLE_RATE	1000
-#define GYRO_FILTER_FREQ 80
+#define GYRO_FILTER_FREQ 30
 #define GYRO_FS_RANGE_RADS	(4000.0f * M_PI_F) / 180
 #define GYRO_SCALE GYRO_FS_RANGE_RADS / 65535
 
@@ -294,6 +296,15 @@ private:
 	perf_counter_t		_cycle;
 	perf_counter_t		_fifo_maxed;
 	perf_counter_t		_reset;
+
+	math::LowPassFilter2p _accel_prefilter_x{4000, 100};
+	math::LowPassFilter2p _accel_prefilter_y{4000, 100};
+	math::LowPassFilter2p _accel_prefilter_z{4000, 100};
+
+	math::LowPassFilter2p _gyro_prefilter_x{32000, 100};
+	math::LowPassFilter2p _gyro_prefilter_y{32000, 100};
+	math::LowPassFilter2p _gyro_prefilter_z{32000, 100};
+
 
 	unsigned _offset = 1;
 

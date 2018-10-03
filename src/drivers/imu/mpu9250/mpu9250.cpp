@@ -373,6 +373,10 @@ void MPU9250::run()
 		int16_t int_accel_y[42];
 		int16_t int_accel_z[42];
 
+		int16_t int_gyro_x[42];
+		int16_t int_gyro_y[42];
+		int16_t int_gyro_z[42];
+
 		float accel_x = 0.0f;
 		float accel_y = 0.0f;
 		float accel_z = 0.0f;
@@ -388,14 +392,17 @@ void MPU9250::run()
 			int_accel_y[i] = int16_t(_dma_data_buffer[_offset + 2 + i * 12] << 8 | _dma_data_buffer[_offset + 3 + i * 12]);
 			int_accel_z[i] = int16_t(_dma_data_buffer[_offset + 4 + i * 12] << 8 | _dma_data_buffer[_offset + 5 + i * 12]);
 
-			accel_x += int_accel_x[i];
-			accel_y += int_accel_y[i];
-			accel_z += int_accel_z[i];
+			int_gyro_x[i] = int16_t(_dma_data_buffer[_offset + 6 + i * 12] << 8 | _dma_data_buffer[_offset + 7 + i * 12]);
+			int_gyro_y[i] = int16_t(_dma_data_buffer[_offset + 8 + i * 12] << 8 | _dma_data_buffer[_offset + 9 + i * 12]);
+			int_gyro_z[i] = int16_t(_dma_data_buffer[_offset + 10 + i * 12] << 8 | _dma_data_buffer[_offset + 11 + i * 12]);
 
-			gyro_x 	+= int16_t(_dma_data_buffer[_offset + 6 + i * 12] << 8 | _dma_data_buffer[_offset + 7 + i * 12]);
-			gyro_y 	+= int16_t(_dma_data_buffer[_offset + 8 + i * 12] << 8 | _dma_data_buffer[_offset + 9 + i * 12]);
-			gyro_z 	+= int16_t(_dma_data_buffer[_offset + 10 + i * 12] << 8 | _dma_data_buffer[_offset + 11 + i * 12]);
+			accel_x += _accel_prefilter_x.apply(int_accel_x[i]);
+			accel_y += _accel_prefilter_y.apply(int_accel_y[i]);
+			accel_z += _accel_prefilter_z.apply(int_accel_z[i]);
 
+			gyro_x += _gyro_prefilter_x.apply(int_gyro_x[i]);
+			gyro_y += _gyro_prefilter_y.apply(int_gyro_y[i]);
+			gyro_z += _gyro_prefilter_z.apply(int_gyro_z[i]);
 
 			// This is our poor mans CRC. We look for duplicate accel data since the accel only produces data at 4KHz max.
 			bool accel_x_matched = int_accel_x[i] == (int16_t)(_dma_data_buffer[_offset + 0 + (i + 1) * 12] << 8 |
