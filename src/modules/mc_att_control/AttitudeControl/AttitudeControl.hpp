@@ -65,6 +65,13 @@ public:
 	void setProportionalGain(const matrix::Vector3f &proportional_gain, const float yaw_weight);
 
 	/**
+	 * Set derivative attitude control gain
+	 * @param derivative_gain 3D vector containing gains for roll, pitch, yaw
+	 * @param yaw_weight A fraction [0,1] deprioritizing yaw compared to roll and pitch
+	 */
+	void setDerivativeGain(const matrix::Vector3f &derivative_gain, const float yaw_weight);
+
+	/**
 	 * Set hard limit for output rate setpoints
 	 * @param rate_limit [rad/s] 3D vector containing limits for roll, pitch, yaw
 	 */
@@ -98,10 +105,11 @@ public:
 	 * @param q estimation of the current vehicle attitude unit quaternion
 	 * @return [rad/s] body frame 3D angular rate setpoint vector to be executed by the rate controller
 	 */
-	matrix::Vector3f update(const matrix::Quatf &q) const;
+	matrix::Vector3f update(const matrix::Quatf &q, const matrix::Vector3f &rate) const;
 
 private:
 	matrix::Vector3f _proportional_gain;
+	matrix::Vector3f _derivative_gain;
 	matrix::Vector3f _rate_limit;
 	float _yaw_w{0.f}; ///< yaw weight [0,1] to deprioritize caompared to roll and pitch
 

@@ -92,6 +92,8 @@ MulticopterAttitudeControl::parameters_updated()
 	_attitude_control.setProportionalGain(Vector3f(_param_mc_roll_p.get(), _param_mc_pitch_p.get(), _param_mc_yaw_p.get()),
 					      _param_mc_yaw_weight.get());
 
+	_attitude_control.setDerivativeGain(Vector3f(0.f, 0.f, _param_mc_yaw_d.get()), _param_mc_yaw_weight.get());
+
 	// angular rate limits
 	using math::radians;
 	_attitude_control.setRateLimit(Vector3f(radians(_param_mc_rollrate_max.get()), radians(_param_mc_pitchrate_max.get()),
@@ -329,7 +331,12 @@ MulticopterAttitudeControl::Run()
 				_man_y_input_filter.reset(0.f);
 			}
 
-			Vector3f rates_sp = _attitude_control.update(q);
+			vehicle_angular_velocity_s angular_velocity{};
+			_vehivle_angular_velocity_sub.copy(&angular_velocity);
+
+			const Vector3f rates{angular_velocity.xyz};
+
+			Vector3f rates_sp = _attitude_control.update(q, rates);
 
 			const hrt_abstime now = hrt_absolute_time();
 			autotune_attitude_control_status_s pid_autotune;

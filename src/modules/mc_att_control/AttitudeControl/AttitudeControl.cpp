@@ -52,7 +52,18 @@ void AttitudeControl::setProportionalGain(const matrix::Vector3f &proportional_g
 	}
 }
 
-matrix::Vector3f AttitudeControl::update(const Quatf &q) const
+void AttitudeControl::setDerivativeGain(const matrix::Vector3f &derivative_gain, const float yaw_weight)
+{
+	_derivative_gain = derivative_gain;
+	_yaw_w = math::constrain(yaw_weight, 0.f, 1.f);
+
+	// compensate for the effect of the yaw weight rescaling the output
+	if (_yaw_w > 1e-4f) {
+		_derivative_gain(2) /= _yaw_w;
+	}
+}
+
+matrix::Vector3f AttitudeControl::update(const Quatf &q, const Vector3f &rate) const
 {
 	Quatf qd = _attitude_setpoint_q;
 
@@ -88,7 +99,7 @@ matrix::Vector3f AttitudeControl::update(const Quatf &q) const
 	const Vector3f eq = 2.f * qe.canonical().imag();
 
 	// calculate angular rates setpoint
-	matrix::Vector3f rate_setpoint = eq.emult(_proportional_gain);
+	matrix::Vector3f rate_setpoint = eq.emult(_proportional_gain) - rate.emult(_derivative_gain);
 
 	// Feed forward the yaw setpoint rate.
 	// yawspeed_setpoint is the feed forward commanded rotation around the world z-axis,

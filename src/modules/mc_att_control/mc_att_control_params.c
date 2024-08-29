@@ -79,6 +79,19 @@ PARAM_DEFINE_FLOAT(MC_PITCH_P, 6.5f);
 PARAM_DEFINE_FLOAT(MC_YAW_P, 2.8f);
 
 /**
+ * Yaw D gain
+ *
+ * Yaw Derivative gain.
+ *
+ * @min 0.0
+ * @max 5
+ * @decimal 2
+ * @increment 0.1
+ * @group Multicopter Attitude Control
+ */
+PARAM_DEFINE_FLOAT(MC_YAW_D, 0.0f);
+
+/**
  * Yaw weight
  *
  * A fraction [0,1] deprioritizing yaw compared to roll and pitch in non-linear attitude control.
