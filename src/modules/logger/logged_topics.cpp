@@ -117,6 +117,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("vehicle_status_flags");
 	add_optional_topic("vtol_vehicle_status", 200);
 	add_topic("wind", 1000);
+	add_topic("mixer_outputs",200);
 
 	// multi topics
 	add_optional_topic_multi("actuator_outputs", 100, 3);
@@ -126,6 +127,8 @@ void LoggedTopics::add_default_topics()
 	add_optional_topic_multi("sensor_hygrometer", 500, 4);
 	add_optional_topic_multi("rpm", 200);
 	add_optional_topic_multi("telemetry_status", 1000, 4);
+	add_optional_topic_multi("can_esc_report", 200, 3);
+	add_optional_topic_multi("servoinfo", 200, 4);
 
 	// EKF multi topics (currently max 9 estimators)
 #if CONSTRAINED_MEMORY

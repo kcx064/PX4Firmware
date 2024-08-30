@@ -30,6 +30,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 ############################################################################
+set(LIBUAVCAN_DIR ${PX4_SOURCE_DIR}/src/drivers/uavcan/libuavcan)
+set(LIBUAVCAN_DIR_DRIVERS ${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers)
+
 
 px4_add_module(
 	MODULE examples__work_item
@@ -37,9 +40,26 @@ px4_add_module(
 	COMPILE_FLAGS
 		#-DDEBUG_BUILD   # uncomment for PX4_DEBUG output
 		#-O0             # uncomment when debugging
+		-DMW_CAN_UAVCAN
+		-DUAVCAN_CPP_VERSION=UAVCAN_CPP03
+		-DUAVCAN_STM32H7_NUTTX
+		-DUAVCAN_STM32H7_NUM_IFACES=2
+		-DMW_NUM_CAN_RECEIVE_RAW=20
 	SRCS
 		WorkItemExample.cpp
 		WorkItemExample.hpp
+		MW_PX4_CAN.cpp
+		MW_PX4_CAN.h
+		MW_H7CAN.cpp
+		# MW_NUTTXCAN.cpp
+		MW_PX4_CAN_DEVICE.h
+		MW_target_hardware_resources.h
+		rtwtypes.h
+	INCLUDES
+		${LIBUAVCAN_DIR}/libuavcan/include
+		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include
+		# \src\drivers\uavcan\libuavcan\libuavcan\include
+		${LIBUAVCAN_DIR}/libuavcan/include/dsdlc_generated
 	DEPENDS
 		px4_work_queue
 	)

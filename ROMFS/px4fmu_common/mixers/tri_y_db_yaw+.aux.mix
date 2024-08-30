@@ -1,0 +1,24 @@
+
+
+# Tricopter Y-Configuration DB Mixer
+# Yaw Servo +Output ==> +Yaw Vehicle Rotation
+# Yaw Servo +Output ==> +Yaw Vehicle Rotation
+
+# Yaw Servo
+M: 1
+S: 0 2  10000  10000      0 -10000  10000
+
+
+# Yaw Servo
+M: 1
+S: 0 2  10000  10000      0 -10000  10000
+
+
+# Yaw Servo
+M: 1
+S: 0 2  10000  10000      0 -10000  10000
+
+
+# Yaw Servo
+M: 1
+S: 0 2  10000  10000      0 -10000  10000

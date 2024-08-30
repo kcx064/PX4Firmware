@@ -1,0 +1,5 @@
+menuconfig SYSTEMCMDS_DBACTUATOR_STEP
+	bool "dbactuator_step"
+	default n
+	---help---
+		Enable support for dbactuator_step

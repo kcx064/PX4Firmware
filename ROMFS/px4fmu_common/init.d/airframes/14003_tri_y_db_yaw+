@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# @name DB Tricopter Y+
+#
+# @type Tricopter Y+
+# @class Copter
+#
+# @output MAIN1 motor 1
+# @output MAIN2 motor 2
+# @output MAIN3 motor 3
+# @output MAIN4 yaw servo
+# @output MAIN5 yaw servo
+# @output MAIN6 yaw servo
+# @output MAIN7 yaw servo
+#
+# @maintainer Ke Chenxu <kcx064@163.com>
+#
+# @board bitcraze_crazyflie exclude
+# @board px4_fmu-v2 exclude
+#
+
+. ${R}etc/init.d/rc.mc_defaults
+
+# MAV_TYPE_TRICOPTER 15
+param set-default MAV_TYPE 15
+param set UAVCAN_ENABLE 0
+
+set PWM_OUT 1234567
+# set PWM_AUX_OUT 1234
+
+# set MIXER_AUX tri_y_db_yaw+
+
+set MIXER tri_y_db_yaw+
+set MIXER_AUX none
+

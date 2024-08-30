@@ -205,6 +205,11 @@ set(msg_files
 	wheel_encoders.msg
 	wind.msg
 	yaw_estimator_status.msg
+	# orb_test.msg
+	servoinfo.msg
+	mixer_outputs.msg
+	can_actuator_test.msg
+	can_esc_report.msg
 )
 
 if(NOT px4_constrained_flash_build)

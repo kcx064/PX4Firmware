@@ -712,6 +712,12 @@ bool MixingOutput::updateStaticMixer()
 	/* do mixing */
 	float outputs[MAX_ACTUATORS] {};
 	const unsigned mixed_num_outputs = _mixers->mix(outputs, _max_num_outputs);
+	// PX4_INFO("mix output is %f, %f, %f, %f, %f, %f", static_cast<double>(outputs[0]),
+	// static_cast<double>(outputs[1]),
+	// static_cast<double>(outputs[2]),
+	// static_cast<double>(outputs[3]),
+	// static_cast<double>(outputs[4]),
+	// static_cast<double>(outputs[5]));
 
 	/* the output limit call takes care of out of band errors, NaN and constrains */
 	output_limit_calc(_throttle_armed, mixed_num_outputs, outputs);
@@ -736,6 +742,14 @@ bool MixingOutput::updateStaticMixer()
 
 	/* apply _param_mot_ordering */
 	reorderOutputs(_current_output_value);
+
+	/* */
+	mixer_outputs_s _mixer_outputs{};
+	for (size_t i = 0; i < MAX_ACTUATORS; i++)
+	{
+		_mixer_outputs.output[i] = outputs[i];
+	}
+	_mixer_outputs_pub.publish(_mixer_outputs);
 
 	/* now return the outputs to the driver */
 	if (_interface.updateOutputs(stop_motors, _current_output_value, mixed_num_outputs, n_updates)) {
