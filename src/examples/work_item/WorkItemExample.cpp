@@ -106,14 +106,14 @@ WorkItemExample::~WorkItemExample()
 bool WorkItemExample::init()
 {
 	// execute Run() on every mixer_output publication
-	if (!_mixer_output_sub.registerCallback()) {
-		PX4_ERR("callback registration failed");
-		return false;
-	}
+	// if (!_mixer_output_sub.registerCallback()) {
+	// 	PX4_ERR("callback registration failed");
+	// 	return false;
+	// }
 
 	// alternatively, Run on fixed interval
-	// ScheduleOnInterval(1000_ms); // 2000 us interval, 200 Hz rate
-	// printf("WorkItemExample init success!\n");
+	ScheduleOnInterval(2500_us); // 2500 us interval, 400 Hz rate
+	printf("WorkItemExample init success!\n");
 
 	px4_arch_configgpio(DB_HIPOWER_EN);
 	px4_arch_configgpio(DB_RC_EN);
@@ -196,6 +196,9 @@ void WorkItemExample::Run()
 
 			_armed = armed;
 		}
+
+
+		servo_bias = _param_db_servo_bias.get();
 	}
 
 
@@ -294,16 +297,16 @@ void WorkItemExample::Run()
 		for (int i = 3; i < 7; i++)
 		{
 			// reverse servo output
-			servo_output[i-3] = - mixer_outputs.output[i]*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
+			servo_output[i-3] = servo_bias - mixer_outputs.output[i]*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
 		}
 		if(_armed){
 			set_servo_postion(can_port_2, &servo_output[0]);
 		}else{
 			if(!can_actuator_test.is_run){
-				servo_output[0] = 500;
-				servo_output[1] = 500;
-				servo_output[2] = 500;
-				servo_output[3] = 500;
+				servo_output[0] = servo_bias + 500;
+				servo_output[1] = servo_bias + 500;
+				servo_output[2] = servo_bias + 500;
+				servo_output[3] = servo_bias + 500;
 				set_servo_postion(can_port_2, &servo_output[0]);
 			}
 		}

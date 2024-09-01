@@ -118,11 +118,14 @@ private:
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::SYS_AUTOSTART>) _param_sys_autostart,   /**< example parameter */
 		(ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig,  /**< another parameter */
-		(ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v
+		(ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
+		(ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias
 	)
 
 
 	bool _armed{false};
+
+	int servo_bias{0};
 
 	int8_t retcanInit = -1;
 	int8_t retcanInit_0 = -1;
