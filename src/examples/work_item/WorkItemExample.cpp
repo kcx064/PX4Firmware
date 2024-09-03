@@ -342,6 +342,7 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.remaining = (_can_bms_status.voltage_v - 504.0f)/(640.8f - 504.0f);
 		_can_bms_status.id = 4;
 		_can_bms_status.temperature = 30;
+		_can_bms_status.time_remaining_s = NAN;
 		_can_bms_status.connected = true;
 		if(_can_bms_status.voltage_v < 640.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.45
 		if(_can_bms_status.voltage_v < 561.60f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
@@ -445,24 +446,42 @@ void WorkItemExample::decode_servo_report(uint8_t can_index, uint32_T id, uint8_
 
 				if(sevo_index == 0){
 					_24v_status.timestamp = hrt_absolute_time();
+
 					_24v_status.voltage_v = servo_report[sevo_index].voltage*0.01;
+					_24v_status.voltage_filtered_v = servo_report[sevo_index].voltage*0.01;
+
+					_24v_status.current_a = -1;
+					_24v_status.current_filtered_a = 0;
+					_24v_status.current_average_a = -1;
+
+					_24v_status.discharged_mah = -1;
+					_24v_status.time_remaining_s = NAN;
+					_24v_status.temperature = NAN;
+					_24v_status.is_powering_off = false;
+
 					_24v_status.scale = 1;
 					_24v_status.cell_count = 6;
+
+
 					_24v_status.voltage_cell_v[0] = _24v_status.voltage_v/6;
 					_24v_status.voltage_cell_v[1] = _24v_status.voltage_v/6;
 					_24v_status.voltage_cell_v[2] = _24v_status.voltage_v/6;
 					_24v_status.voltage_cell_v[3] = _24v_status.voltage_v/6;
 					_24v_status.voltage_cell_v[4] = _24v_status.voltage_v/6;
 					_24v_status.voltage_cell_v[5] = _24v_status.voltage_v/6;
+
 					_24v_status.remaining = (servo_report[sevo_index].voltage*0.01 - 22.2)/(25.2-22.2);//4.2*6 - 3.7*6
+
 					_24v_status.id = 3;
-					// _24v_status.temperature = 26;
+
 					if(_24v_status.voltage_v < 25.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
 					if(_24v_status.voltage_v < 23.4f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
 					if(_24v_status.voltage_v < 22.8f)_24v_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
 					if(_24v_status.voltage_v < 22.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
 					if(_24v_status.voltage_v < 21.0f)_24v_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
+
 					_24v_status.connected = true;
+
 					_24v_status_pub.publish(_24v_status);
 				}
 
