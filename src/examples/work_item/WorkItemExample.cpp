@@ -611,11 +611,15 @@ void WorkItemExample::set_servo_postion(uint8_t can_index, uint16_t *cmd){
 	servo_uavcan_msg_index += 8;
 
 	/* send servo control msg */
-	MW_CAN_TransmitMessage(can_index, &txData[0], SERVO_UAVCAN_CONTROL_DATA_TYPE_ID, 1, 0, 6);
+	_can_servo_ret.timestamp = hrt_absolute_time();
+	_can_servo_ret.send_ret = MW_CAN_TransmitMessage(can_index, &txData[0], SERVO_UAVCAN_CONTROL_DATA_TYPE_ID, 1, 0, 6);
+	_can_servo_ret_pub.publish(_can_servo_ret);
+
 }
 
 void WorkItemExample::set_esc_value(uint8_t can_index, int16_t *cmd, int16_t esc_frq){
 	uint8_t esc_msg_data[8] = {0,};
+	int8_t send_ret[3] = {-1, -1, -1};
 	for (int j = 0; j < 3; j++)
 	{
 		memset(esc_msg_data, 0, sizeof(esc_msg_data));
@@ -632,8 +636,11 @@ void WorkItemExample::set_esc_value(uint8_t can_index, int16_t *cmd, int16_t esc
 
 		esc_msg_data[7] = ~esc_msg_data[6];
 
-		MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
+		send_ret[j] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
 	}
+	_can_esc_ret.timestamp = hrt_absolute_time();
+	memcpy(_can_esc_ret.send_ret, send_ret, sizeof(send_ret));
+	_can_esc_ret_pub.publish(_can_esc_ret);
 }
 
 

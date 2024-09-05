@@ -210,6 +210,8 @@ set(msg_files
 	mixer_outputs.msg
 	can_actuator_test.msg
 	can_esc_report.msg
+	can_esc_ret.msg
+	can_servo_ret.msg
 )
 
 if(NOT px4_constrained_flash_build)

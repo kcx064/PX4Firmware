@@ -54,6 +54,8 @@
 #include <uORB/topics/can_actuator_test.h> //only for actuator debug when disarmed
 #include <uORB/topics/servoinfo.h>
 #include <uORB/topics/can_esc_report.h>
+#include <uORB/topics/can_esc_ret.h>
+#include <uORB/topics/can_servo_ret.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/esc_status.h>
 
@@ -103,6 +105,12 @@ private:
 
 	uORB::PublicationMulti<battery_status_s> _24v_status_pub{ORB_ID(battery_status)};
 	battery_status_s  _24v_status{};
+
+	uORB::Publication<can_esc_ret_s> _can_esc_ret_pub{ORB_ID(can_esc_ret)};
+	can_esc_ret_s    _can_esc_ret{};
+
+	uORB::Publication<can_servo_ret_s> _can_servo_ret_pub{ORB_ID(can_servo_ret)};
+	can_servo_ret_s _can_servo_ret{};
 
 	// Subscriptions
 	uORB::SubscriptionCallbackWorkItem _mixer_output_sub{this, ORB_ID(mixer_outputs)};        // subscription that schedules WorkItemExample when updated

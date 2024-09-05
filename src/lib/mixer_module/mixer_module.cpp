@@ -745,6 +745,7 @@ bool MixingOutput::updateStaticMixer()
 
 	/* */
 	mixer_outputs_s _mixer_outputs{};
+	_mixer_outputs.timestamp = hrt_absolute_time();
 	for (size_t i = 0; i < MAX_ACTUATORS; i++)
 	{
 		_mixer_outputs.output[i] = outputs[i];
