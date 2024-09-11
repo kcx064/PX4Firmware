@@ -99,6 +99,8 @@ WorkItemExample::WorkItemExample() :
 
 WorkItemExample::~WorkItemExample()
 {
+	MW_CAN_Close(can_port_1);
+	MW_CAN_Close(can_port_2);
 	perf_free(_loop_perf);
 	perf_free(_loop_interval_perf);
 }

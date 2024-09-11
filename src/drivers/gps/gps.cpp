@@ -993,7 +993,8 @@ GPS::run()
 
 			while ((helper_ret = _helper->receive(receive_timeout)) > 0 && !should_exit()) {
 
-				if (helper_ret & 1) {
+				if (helper_ret & 2) {//kcx064 3 for all; 2 for heading
+					// PX4_WARN("GPS: helper_ret %d", helper_ret);
 					publish();
 
 					last_rate_count++;
@@ -1219,7 +1220,7 @@ GPS::publish()
 
 		_report_gps_pos.selected_rtcm_instance = _selected_rtcm_instance;
 		_report_gps_pos.rtcm_injection_rate = _rate_rtcm_injection;
-
+		// PX4_WARN("time stamp: %llu, heading: %f", _report_gps_pos.timestamp, static_cast<double>(_report_gps_pos.heading));
 		_report_gps_pos_pub.publish(_report_gps_pos);
 		// Heading/yaw data can be updated at a lower rate than the other navigation data.
 		// The uORB message definition requires this data to be set to a NAN if no new valid data is available.
