@@ -51,6 +51,7 @@
 #include "mag.hpp"
 #include "rangefinder.hpp"
 #include "safety_button.hpp"
+#include "servoinfo.hpp"
 
 /*
  * IUavcanSensorBridge
@@ -152,6 +153,14 @@ void IUavcanSensorBridge::make_all(uavcan::INode &node, List<IUavcanSensorBridge
 
 	if (uavcan_sub_button != 0) {
 		list.add(new UavcanSafetyButtonBridge(node));
+	}
+
+	//servoinfo
+	int32_t uavcan_sub_servoinfo = 1;
+	param_get(param_find("UAVCAN_SUB_SER"), &uavcan_sub_servoinfo);
+	if (uavcan_sub_servoinfo != 0)
+	{
+		list.add(new UavcanServoInfoBridge(node));
 	}
 }
 

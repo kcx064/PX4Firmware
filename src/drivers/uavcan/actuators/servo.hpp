@@ -36,6 +36,8 @@
 #include <uavcan/uavcan.hpp>
 #include <uavcan/equipment/actuator/Status.hpp>
 #include <uavcan/equipment/actuator/ArrayCommand.hpp>
+#include <uavcan/equipment/actuator/ArrayDBServoCmd.hpp>
+#include <com/himark/servo/ServoCmd.hpp>
 #include <lib/perf/perf_counter.h>
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/topics/actuator_outputs.h>
@@ -45,9 +47,9 @@
 class UavcanServoController
 {
 public:
-	static constexpr int MAX_ACTUATORS = 8;
-	static constexpr unsigned MAX_RATE_HZ = 50;
-	static constexpr unsigned UAVCAN_COMMAND_TRANSFER_PRIORITY = 6;	///< 0..31, inclusive, 0 - highest, 31 - lowest
+	static constexpr int MAX_ACTUATORS = 4;
+	static constexpr unsigned MAX_RATE_HZ = 400;
+	static constexpr unsigned UAVCAN_COMMAND_TRANSFER_PRIORITY = 24;///< 0..31, inclusive, 0 - highest, 31 - lowest
 
 	UavcanServoController(uavcan::INode &node);
 	~UavcanServoController() = default;
@@ -56,5 +58,7 @@ public:
 
 private:
 	uavcan::INode								&_node;
-	uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand> _uavcan_pub_array_cmd;
+	// uavcan::Publisher<uavcan::equipment::actuator::ArrayCommand> _uavcan_pub_array_cmd;
+	// uavcan::Publisher<uavcan::equipment::actuator::ArrayDBServoCmd> _uavcan_pub_array_cmd;
+	uavcan::Publisher<com::himark::servo::ServoCmd> _uavcan_pub_array_cmd;
 };

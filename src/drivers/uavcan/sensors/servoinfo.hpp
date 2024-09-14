@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2021 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014, 2015 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,39 +31,41 @@
  *
  ****************************************************************************/
 
-#include "servo.hpp"
-#include <systemlib/err.h>
-#include <drivers/drv_hrt.h>
+/**
+ * @author Ke Chenxu <kcx064@163.com>
+ */
 
-using namespace time_literals;
+#pragma once
 
-UavcanServoController::UavcanServoController(uavcan::INode &node) :
-	_node(node),
-	_uavcan_pub_array_cmd(node)
+#include "sensor_bridge.hpp"
+#include <uorb/topics/servoinfo.h>
+
+// #include <uavcan/equipment/ahrs/MagneticFieldStrength.hpp>
+// #include <uavcan/equipment/ahrs/MagneticFieldStrength2.hpp>
+
+#include <com/himark/servo/ServoInfo.hpp>
+
+class UavcanServoInfoBridge : public UavcanSensorBridgeBase
 {
-	_uavcan_pub_array_cmd.setPriority(UAVCAN_COMMAND_TRANSFER_PRIORITY);
-}
+public:
+	static const char *const NAME;
 
-void
-UavcanServoController::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs)
-{
-	// uavcan::equipment::actuator::ArrayCommand msg;
-	// uavcan::equipment::actuator::ArrayDBServoCmd msg;
-	com::himark::servo::ServoCmd msg;
+	UavcanServoInfoBridge(uavcan::INode &node);
 
-	for (unsigned i = 0; i < num_outputs; ++i) {
-		msg.cmd.push_back(outputs[i]);
+	const char *get_name() const override { return NAME; }
 
-		// uavcan::equipment::actuator::DBServoCmd cmd;
-		// cmd.command_value = 100;
-		// msg.commands.push_back(cmd);
+	int init() override;
 
-		// uavcan::equipment::actuator::Command cmd;
-		// cmd.actuator_id = i;
-		// cmd.command_type = uavcan::equipment::actuator::Command::COMMAND_TYPE_UNITLESS;
-		// cmd.command_value = (float)outputs[i] / 500.f - 1.f; // [-1, 1]
-		// msg.commands.push_back(cmd);
-	}
+private:
 
-	_uavcan_pub_array_cmd.broadcast(msg);
-}
+	// int init_driver(uavcan_bridge::Channel *channel) override;
+
+	void servoinfo_sub_cb(const uavcan::ReceivedDataStructure<com::himark::servo::ServoInfo> &msg);
+
+	typedef uavcan::MethodBinder < UavcanServoInfoBridge *,
+		void (UavcanServoInfoBridge::*)
+		(const uavcan::ReceivedDataStructure<com::himark::servo::ServoInfo> &) >
+		ServoInfoCbBinder;
+
+	uavcan::Subscriber<com::himark::servo::ServoInfo, ServoInfoCbBinder> _sub_servoinfo;
+};

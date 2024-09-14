@@ -48,9 +48,11 @@ using namespace time_literals;
 UavcanEscController::UavcanEscController(uavcan::INode &node) :
 	_node(node),
 	_uavcan_pub_raw_cmd(node),
-	_uavcan_sub_status(node)
+	_uavcan_sub_status(node),
+	_uavcan_pub_array_cmd(node)
 {
 	_uavcan_pub_raw_cmd.setPriority(UAVCAN_COMMAND_TRANSFER_PRIORITY);
+	_uavcan_pub_array_cmd.setPriority(UAVCAN_COMMAND_TRANSFER_PRIORITY_SERVO);
 }
 
 int
@@ -87,12 +89,25 @@ UavcanEscController::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUA
 	 */
 	uavcan::equipment::esc::RawCommand msg;
 
+	/*
+	 * DB Servo msg
+	 */
+	com::himark::servo::ServoCmd msg_servo;
+
 	for (unsigned i = 0; i < num_outputs; i++) {
 		if (stop_motors || outputs[i] == DISARMED_OUTPUT_VALUE) {
 			msg.cmd.push_back(static_cast<unsigned>(0));
 
 		} else {
 			msg.cmd.push_back(static_cast<int>(outputs[i]));
+		}
+
+		if (i >= 3 && i <= 6){
+			if(stop_motors){
+				msg_servo.cmd.push_back(500);
+			}else{
+				msg_servo.cmd.push_back(uint16_t(float(outputs[i])/8.192f));
+			}
 		}
 	}
 
@@ -120,6 +135,9 @@ UavcanEscController::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUA
 	 * Note that for a quadrotor it takes one CAN frame
 	 */
 	_uavcan_pub_raw_cmd.broadcast(msg);
+
+	/* Publish */
+	// _uavcan_pub_array_cmd.broadcast(msg_servo);
 }
 
 void

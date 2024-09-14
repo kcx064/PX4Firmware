@@ -47,6 +47,7 @@
 #include <uavcan/uavcan.hpp>
 #include <uavcan/equipment/esc/RawCommand.hpp>
 #include <uavcan/equipment/esc/Status.hpp>
+#include <com/himark/servo/ServoCmd.hpp>
 #include <lib/perf/perf_counter.h>
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/topics/actuator_outputs.h>
@@ -91,6 +92,8 @@ private:
 
 	static constexpr unsigned UAVCAN_COMMAND_TRANSFER_PRIORITY = 5;	///< 0..31, inclusive, 0 - highest, 31 - lowest
 
+	static constexpr unsigned UAVCAN_COMMAND_TRANSFER_PRIORITY_SERVO = 24; ///< 0..31, inclusive, 0 - highest, 31 - lowest
+
 	typedef uavcan::MethodBinder<UavcanEscController *,
 		void (UavcanEscController::*)(const uavcan::ReceivedDataStructure<uavcan::equipment::esc::Status>&)> StatusCbBinder;
 
@@ -115,4 +118,9 @@ private:
 	 * ESC states
 	 */
 	uint8_t				_max_number_of_nonzero_outputs{0};
+
+	/*
+	 * Servo
+	 */
+	uavcan::Publisher<com::himark::servo::ServoCmd> _uavcan_pub_array_cmd;
 };
