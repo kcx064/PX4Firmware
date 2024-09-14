@@ -19,7 +19,7 @@ int16 t_mcu
 int16 t_module
 
 # esc report 3
-uint32 status
+uint32 status_flags
 uint16 theta
 int16 t_motor
 

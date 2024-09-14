@@ -153,8 +153,8 @@ bool WorkItemExample::init()
 	/* bms */
 	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_INFO_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_ALARM_DATA_TYPE_ID, 1);
-	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLV_DATA_TYPE_ID, 1);
-	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLT_DATA_TYPE_ID, 1);
+	// MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLV_DATA_TYPE_ID, 1);
+	// MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLT_DATA_TYPE_ID, 1);
 
 
 	return true;
@@ -270,10 +270,10 @@ void WorkItemExample::Run()
 	/* send can data */
 	if (retcanInit < 0 || retcanInit_0 < 0)/* not init can port */
 	{
-		retcanInit_0 = MW_CAN_Open(can_port_1, 1000000U, 0);
+		retcanInit_0 = MW_CAN_Open(can_port_1, _param_db_can_rate.get(), 0);
 		PX4_INFO("can port 1 open, ret: %d", (int)retcanInit_0);
 
-		retcanInit = MW_CAN_Open(can_port_2, 1000000U, 0);
+		retcanInit = MW_CAN_Open(can_port_2, _param_db_can_rate.get(), 0);
 		PX4_INFO("can port 2 open, ret: %d", (int)retcanInit);
 	}else{/* can port has been initialized, therefore send data */
 		collect_esc_report(can_port_1);
@@ -320,13 +320,18 @@ void WorkItemExample::Run()
 
 void WorkItemExample::collect_bms_report(uint8_t can_index){
 	if(!MW_CAN_ReceiveMessages_By_ID(can_index, bms_hcu_info.data_raw, BMS_HCU_INFO_DATA_TYPE_ID, 1, &remote, &Length)
-	&& !MW_CAN_ReceiveMessages_By_ID(can_index, bms_hcu_cellv.data_raw, BMS_HCU_CELLV_DATA_TYPE_ID, 1, &remote, &Length)
-	&& !MW_CAN_ReceiveMessages_By_ID(can_index, bms_hcu_cellt.data_raw, BMS_HCU_CELLT_DATA_TYPE_ID, 1, &remote, &Length))
+	&& !MW_CAN_ReceiveMessages_By_ID(can_index, bms_hcu_alarm.data_raw, BMS_HCU_ALARM_DATA_TYPE_ID, 1, &remote, &Length)
+	)
 	{
 
 		_can_bms_status.timestamp = hrt_absolute_time();
-		_can_bms_status.voltage_v = bms_hcu_info.data.batVoltage*0.1f;
-		_can_bms_status.voltage_filtered_v = bms_hcu_info.data.batVoltage*0.1f;
+		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
+		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
+
+		_can_bms_status.current_a = (static_cast<uint16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		_can_bms_status.current_filtered_a = _can_bms_status.current_a;
+		_can_bms_status.current_average_a = -1;
+
 		_can_bms_status.cell_count = 12;
 		_can_bms_status.scale = 1;
 		_can_bms_status.voltage_cell_v[0] = _can_bms_status.voltage_v/12;//max: 53.4 equivalent 12cell * 4.45Vmax
@@ -343,11 +348,11 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.voltage_cell_v[11] = _can_bms_status.voltage_v/12;
 		_can_bms_status.remaining = (_can_bms_status.voltage_v - 504.0f)/(640.8f - 504.0f);
 		_can_bms_status.id = 4;
-		_can_bms_status.temperature = 30;
+		_can_bms_status.temperature = NAN;
 		_can_bms_status.time_remaining_s = NAN;
 		_can_bms_status.connected = true;
 		if(_can_bms_status.voltage_v < 640.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.45
-		if(_can_bms_status.voltage_v < 561.60f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
+		if(_can_bms_status.voltage_v < 561.6f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
 		if(_can_bms_status.voltage_v < 547.2f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
 		if(_can_bms_status.voltage_v < 532.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
 		if(_can_bms_status.voltage_v < 504.0f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
@@ -443,7 +448,7 @@ void WorkItemExample::decode_servo_report(uint8_t can_index, uint32_T id, uint8_
 				servo_report[sevo_index].current = servo_decode_state[sevo_index].servoinfo_raw_data[5];//uint10
 				servo_report[sevo_index].pcb_temp = servo_decode_state[sevo_index].servoinfo_raw_data[6];//uint10
 				servo_report[sevo_index].motor_temp = servo_decode_state[sevo_index].servoinfo_raw_data[7];//uint10
-				servo_report[sevo_index].statusinfo = servo_decode_state[sevo_index].servoinfo_raw_data[8];//uint5
+				servo_report[sevo_index].statusinfo_flags = servo_decode_state[sevo_index].servoinfo_raw_data[8];//uint5
 				orb_publish(ORB_ID(servoinfo), _servoinfo_sub[sevo_index], &servo_report[sevo_index]);
 
 				if(sevo_index == 0){
@@ -553,7 +558,7 @@ void WorkItemExample::decode_esc_report(uint8_t can_index, uint32_T id, uint8_t 
 		esc_report[esc_index].t_module = esc_status_2.data.t_module;//(report_2_raw[7] << 8 | report_2_raw[6]);
 
 		/* report 3 */
-		esc_report[esc_index].status = esc_status_3.data.status;//(report_3_raw[3] << 24 | report_3_raw[2] << 16 | report_3_raw[1] << 8 | report_3_raw[0]);
+		esc_report[esc_index].status_flags = esc_status_3.data.status;//(report_3_raw[3] << 24 | report_3_raw[2] << 16 | report_3_raw[1] << 8 | report_3_raw[0]);
 		esc_report[esc_index].theta = esc_status_3.data.theta;//(report_3_raw[5] << 8 | report_3_raw[4]);
 		esc_report[esc_index].t_motor = esc_status_3.data.t_motor;//(report_3_raw[7] << 8 | report_3_raw[6]);
 
@@ -576,7 +581,7 @@ void WorkItemExample::decode_esc_report(uint8_t can_index, uint32_T id, uint8_t 
 		_can_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
 		_can_esc_status.esc_online_flags |= 1 << esc_index;
 		_can_esc_status.esc_armed_flags |= 1 << esc_index;
-		_esc_status_pub.publish(_can_esc_status);
+		// _esc_status_pub.publish(_can_esc_status);
 	}
 
 }

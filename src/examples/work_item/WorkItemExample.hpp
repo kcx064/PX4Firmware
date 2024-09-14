@@ -127,7 +127,8 @@ private:
 		(ParamInt<px4::params::SYS_AUTOSTART>) _param_sys_autostart,   /**< example parameter */
 		(ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig,  /**< another parameter */
 		(ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
-		(ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias
+		(ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias,
+		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate
 	)
 
 
@@ -178,20 +179,75 @@ private:
 
 	servo_decode_t servo_decode_state[4];
 
+	const float BMS_VOLTAGE_SCALE = 0.1f;
 #pragma pack(push,1)
 	typedef union bms_hcu_info_u
 	{
 		uint8_t data_raw[8];
 		struct bms_hcu_info_s
 		{
-			uint16_t batVoltage;
-			uint16_t batCurrent;
-			uint8_t batSoc;//电池状态
-			uint8_t batSoh;//健康状态
-			uint8_t batState;
-			uint8_t batLife;
+			// 电池电压，高8位和低8位组合
+			uint8_t batVoltage_H : 8;
+			uint8_t batVoltage_L : 8;
+
+			// 电池电流，高8位和低8位组合
+			uint8_t batCurrent_H : 8;
+			uint8_t batCurrent_L : 8;
+
+			// 电池状态量
+			uint8_t batSoc : 8; //电池荷电状态
+			uint8_t batSoh : 8; //电池健康状态
+			uint8_t batAlmLv : 4;//电池警告级别
+			uint8_t batState : 4;//电池状态
+
+			// 电池寿命
+			uint8_t batLife : 8;
 		}data;
 	}bms_hcu_info_t;
+
+	typedef union bms_hcu_alarm_u
+	{
+		uint8_t data_raw[8];
+		struct bms_hcu_alarm_s
+		{
+			//byte 0
+			uint8_t alm_cell_ut : 2;
+			uint8_t alm_cell_ot : 2;
+			uint8_t alm_cell_uv : 2;
+			uint8_t alm_cell_ov : 2;
+			//byte 1
+			uint8_t alm_batt_ov : 2;
+			uint8_t alm_batt_dt : 2;
+			uint8_t alm_batt_dv : 2;
+			uint8_t alm_cell_tbk : 1;
+			uint8_t alm_cell_lbk : 1;
+			//byte 2
+			uint8_t alm_chrg_ocs : 2;
+			uint8_t alm_batt_uc : 2;
+			uint8_t alm_batt_oc : 2;
+			uint8_t alm_batt_uv : 2;
+			//byte 3
+			uint8_t alm_bsu_offline : 2;
+			uint8_t alm_dsch_oct : 2;
+			uint8_t alm_chrg_oct : 2;
+			uint8_t alm_dsch_ocs : 2;
+			//byte 4
+			uint8_t alm_vcu_offline : 2;
+			uint8_t alm_bmu_fail : 1;
+			uint8_t alm_aux_fail : 1;
+			uint8_t alm_prechrg_fail : 1;
+			uint8_t alm_leak_oc : 2;
+			uint8_t alm_bsu_fault : 1;
+			//byte 5
+			uint8_t reserved_0 : 6;
+			uint8_t alm_hvrel_fail : 1;
+			uint8_t alm_hall_break : 1;
+			//byte 6
+			uint8_t reserved_1 : 8;
+			//byte 7
+			uint8_t reserved_2 : 8;
+		}data;
+	}bms_hcu_alarm_t;
 
 	typedef union bms_hcu_cellv_u
 	{
@@ -249,8 +305,9 @@ private:
 #pragma pack(pop)
 
 	bms_hcu_info_t bms_hcu_info;
-	bms_hcu_cellv_t bms_hcu_cellv;
-	bms_hcu_cellt_t bms_hcu_cellt;
+	bms_hcu_alarm_t bms_hcu_alarm;
+	// bms_hcu_cellv_t bms_hcu_cellv;
+	// bms_hcu_cellt_t bms_hcu_cellt;
 
 	esc_report_1_t esc_status_1;
 	esc_report_2_t esc_status_2;

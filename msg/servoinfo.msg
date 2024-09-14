@@ -16,5 +16,5 @@ uint16 pcb_temp
 
 uint16 motor_temp
 
-uint8 statusinfo
+uint8 statusinfo_flags
 
