@@ -321,14 +321,15 @@ int dbactuator_step_main(int argc, char *argv[])
 			actuator_test(function, NAN, 0, true);
 			return 0;
 		} else if (strcmp("can", argv[myoptind]) == 0) {
+			/* 转速增加阶段 */
 			float temp_value = -1.0;
 			do{
 				actuator_test_can(function - actuator_test_s::FUNCTION_MOTOR1, temp_value, true);
-				px4_usleep(100000);// 100ms
-				// PX4_WARN("Motor ramp value (%.2f%%)", static_cast<double>((temp_value+1)*50.f));
-				temp_value += 0.02f;
+				px4_usleep(50000);// 50ms
+				PX4_WARN("Motor ramp value (%.2f%%)", static_cast<double>((temp_value+1)*50.f));
+				temp_value += 0.005f;
 			}while(temp_value < value);
-
+			/* 转速平稳阶段 */
 			hrt_abstime start_time = hrt_absolute_time();
 			float timeused = 0;
 			do{
@@ -340,6 +341,15 @@ int dbactuator_step_main(int argc, char *argv[])
 
 			hrt_abstime during_time = hrt_absolute_time() - start_time;
 			PX4_INFO("During time %.3fs", (double)(during_time/1000)/1000);
+			/* 转速下降阶段 */
+			temp_value = value;
+			do{
+				actuator_test_can(function - actuator_test_s::FUNCTION_MOTOR1, temp_value, true);
+				px4_usleep(50000);// 50ms
+				PX4_WARN("Motor ramp value (%.2f%%)", static_cast<double>((temp_value+1)*50.f));
+				temp_value -= 0.005f;
+			}while(temp_value > -1.0f);
+			/* 停止阶段 */
 			px4_usleep(1000*5);
 			actuator_test_can(function - actuator_test_s::FUNCTION_MOTOR1, 0, false);
 			px4_usleep(1000*5);

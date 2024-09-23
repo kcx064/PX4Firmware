@@ -220,52 +220,51 @@ void WorkItemExample::Run()
 	}
 
 	/* used for can test with diarmd */
-	if (_can_actuator_test_sub.updated()) {
-
-		if (_can_actuator_test_sub.copy(&can_actuator_test)){
-			// DO WORK
-			if(!_armed){
-				if(can_actuator_test.is_run){//test is run
-					if(can_actuator_test.actuator_index < 3){//0 1 2 for esc
-						esc_output[0] = 0;
-						esc_output[1] = 0;
-						esc_output[2] = 0;
-						esc_output[can_actuator_test.actuator_index] = can_actuator_test.cmd*(ESC_CAN_CONTROL_DATA_MAX - ESC_CAN_CONTROL_DATA_MIN)/2 + (ESC_CAN_CONTROL_DATA_MAX + ESC_CAN_CONTROL_DATA_MIN)/2;
-						set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
-					}else if(can_actuator_test.actuator_index==7){
-						servo_output[0] = - can_actuator_test.cmd*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
-						servo_output[1] = servo_output[0];
-						servo_output[2] = servo_output[0];
-						servo_output[3] = servo_output[0];
-						set_servo_postion(can_port_2, &servo_output[0]);
-					}else if(can_actuator_test.actuator_index==8){//set all esc at same time
-						esc_output[0] = can_actuator_test.cmd*(ESC_CAN_CONTROL_DATA_MAX - ESC_CAN_CONTROL_DATA_MIN)/2 + (ESC_CAN_CONTROL_DATA_MAX + ESC_CAN_CONTROL_DATA_MIN)/2;
-						esc_output[1] = esc_output[0];
-						esc_output[2] = esc_output[0];
-						set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
-					}
-					else{//3 4 5 6 for servo
-						servo_output[0] = 500;
-						servo_output[1] = 500;
-						servo_output[2] = 500;
-						servo_output[3] = 500;
-						// reverse servo output
-						servo_output[can_actuator_test.actuator_index-3] = - can_actuator_test.cmd*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
-						set_servo_postion(can_port_2, &servo_output[0]);
-					}
-				}else{//stop test
-					esc_output[0] = 0;
-					esc_output[1] = 0;
-					esc_output[2] = 0;
-					set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
-					servo_output[0] = 500;
-					servo_output[1] = 500;
-					servo_output[2] = 500;
-					servo_output[3] = 500;
-					set_servo_postion(can_port_2, &servo_output[0]);
-				}
+	if (_can_actuator_test_sub.updated()){
+		_can_actuator_test_sub.copy(&can_actuator_test);
+	}
+	if(!_armed){
+		if(can_actuator_test.is_run){//test is run
+			if(can_actuator_test.actuator_index < 3){//0 1 2 for esc
+				esc_output[0] = 0;
+				esc_output[1] = 0;
+				esc_output[2] = 0;
+				esc_output[can_actuator_test.actuator_index] = can_actuator_test.cmd*(ESC_CAN_CONTROL_DATA_MAX - ESC_CAN_CONTROL_DATA_MIN)/2 + (ESC_CAN_CONTROL_DATA_MAX + ESC_CAN_CONTROL_DATA_MIN)/2;
+				set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
+			}else if(can_actuator_test.actuator_index==7){
+				servo_output[0] = - can_actuator_test.cmd*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
+				servo_output[1] = servo_output[0];
+				servo_output[2] = servo_output[0];
+				servo_output[3] = servo_output[0];
+				set_servo_postion(can_port_2, &servo_output[0]);
+			}else if(can_actuator_test.actuator_index==8){//set all esc at same time
+				esc_output[0] = can_actuator_test.cmd*(ESC_CAN_CONTROL_DATA_MAX - ESC_CAN_CONTROL_DATA_MIN)/2 + (ESC_CAN_CONTROL_DATA_MAX + ESC_CAN_CONTROL_DATA_MIN)/2;
+				esc_output[1] = esc_output[0];
+				esc_output[2] = esc_output[0];
+				set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
+			}
+			else{//3 4 5 6 for servo
+				servo_output[0] = 500;
+				servo_output[1] = 500;
+				servo_output[2] = 500;
+				servo_output[3] = 500;
+				// reverse servo output
+				servo_output[can_actuator_test.actuator_index-3] = - can_actuator_test.cmd*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
+				set_servo_postion(can_port_2, &servo_output[0]);
 			}
 		}
+		// else
+		// {//stop test
+		// 	esc_output[0] = 0;
+		// 	esc_output[1] = 0;
+		// 	esc_output[2] = 0;
+		// 	set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
+		// 	servo_output[0] = 500;
+		// 	servo_output[1] = 500;
+		// 	servo_output[2] = 500;
+		// 	servo_output[3] = 500;
+		// 	set_servo_postion(can_port_2, &servo_output[0]);
+		// }
 	}
 
 
