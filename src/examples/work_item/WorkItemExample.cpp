@@ -114,7 +114,7 @@ bool WorkItemExample::init()
 	// }
 
 	// alternatively, Run on fixed interval
-	ScheduleOnInterval(2500_us); // 2500 us interval, 400 Hz rate
+	ScheduleOnInterval(10_ms); // 10 ms interval, 100 Hz rate
 	printf("WorkItemExample init success!\n");
 
 	px4_arch_configgpio(DB_HIPOWER_EN);
@@ -201,6 +201,8 @@ void WorkItemExample::Run()
 
 
 		servo_bias = _param_db_servo_bias.get();
+		px4_arch_gpiowrite(DB_HIPOWER_EN, _param_db_bms_en.get());//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
+		px4_arch_gpiowrite(DB_RC_EN, _param_db_rc_sel.get());
 	}
 
 
@@ -581,7 +583,7 @@ void WorkItemExample::decode_esc_report(uint8_t can_index, uint32_T id, uint8_t 
 		_can_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
 		_can_esc_status.esc_online_flags |= 1 << esc_index;
 		_can_esc_status.esc_armed_flags |= 1 << esc_index;
-		// _esc_status_pub.publish(_can_esc_status);
+		_esc_status_pub.publish(_can_esc_status);
 	}
 
 }

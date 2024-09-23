@@ -128,7 +128,9 @@ private:
 		(ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig,  /**< another parameter */
 		(ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
 		(ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias,
-		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate
+		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate,
+		(ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
+		(ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel
 	)
 
 

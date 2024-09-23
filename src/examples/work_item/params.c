@@ -34,3 +34,25 @@ PARAM_DEFINE_INT32(DB_SERVO_BIAS, 0);
  */
 PARAM_DEFINE_INT32(DB_CAN_RATE, 1000000);
 
+/**
+ * DB BMS EN
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 Disable
+ * @value 1 Enable
+ */
+PARAM_DEFINE_INT32(DB_BMS_EN, 1);
+
+/**
+ * DB RC Select
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 RC_MAIN
+ * @value 1 RC_AUX
+ */
+PARAM_DEFINE_INT32(DB_RC_SEL, 0);
+
