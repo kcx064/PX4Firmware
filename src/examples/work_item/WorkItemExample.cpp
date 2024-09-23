@@ -114,13 +114,13 @@ bool WorkItemExample::init()
 	// }
 
 	// alternatively, Run on fixed interval
-	ScheduleOnInterval(10_ms); // 10 ms interval, 100 Hz rate
+	ScheduleOnInterval(_param_db_interval.get()); // 10 ms interval, 100 Hz rate
 	printf("WorkItemExample init success!\n");
 
 	px4_arch_configgpio(DB_HIPOWER_EN);
 	px4_arch_configgpio(DB_RC_EN);
 
-	px4_arch_gpiowrite(DB_HIPOWER_EN, 1);//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
+	px4_arch_gpiowrite(DB_HIPOWER_EN, 0);//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
 	px4_arch_gpiowrite(DB_RC_EN, 0);
 
 	/* servo report */

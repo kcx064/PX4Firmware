@@ -321,7 +321,14 @@ int dbactuator_step_main(int argc, char *argv[])
 			actuator_test(function, NAN, 0, true);
 			return 0;
 		} else if (strcmp("can", argv[myoptind]) == 0) {
-			//wait_time_s wait_time_s = 1时，px4_usleep(1000*5)，持续时间是1.808s，
+			float temp_value = -1.0;
+			do{
+				actuator_test_can(function - actuator_test_s::FUNCTION_MOTOR1, temp_value, true);
+				px4_usleep(100000);// 100ms
+				// PX4_WARN("Motor ramp value (%.2f%%)", static_cast<double>((temp_value+1)*50.f));
+				temp_value += 0.02f;
+			}while(temp_value < value);
+
 			hrt_abstime start_time = hrt_absolute_time();
 			float timeused = 0;
 			do{

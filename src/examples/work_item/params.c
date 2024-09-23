@@ -10,6 +10,20 @@
 PARAM_DEFINE_FLOAT(BAT_CELL_V, 22.5f);
 
 /**
+ * DB Control Interval
+ *
+ * @unit us
+ * @min 0
+ * @max 1000000
+ * @group DB
+ * @value 10000 100Hz
+ * @value 5000 200Hz
+ * @value 2500 400Hz
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(DB_INTERVAL, 10000);
+
+/**
  * DB Servo Bias
  *
  *
