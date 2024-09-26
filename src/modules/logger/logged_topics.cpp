@@ -129,8 +129,8 @@ void LoggedTopics::add_default_topics()
 	add_optional_topic_multi("sensor_hygrometer", 500, 4);
 	add_optional_topic_multi("rpm", 200);
 	add_optional_topic_multi("telemetry_status", 1000, 4);
-	add_optional_topic_multi("can_esc_report", 200, 3);
-	add_optional_topic_multi("servoinfo", 200, 4);
+	add_optional_topic_multi("can_esc_report", 100, 3);
+	add_optional_topic_multi("servoinfo", 100, 4);
 
 	// EKF multi topics (currently max 9 estimators)
 #if CONSTRAINED_MEMORY

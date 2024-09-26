@@ -300,7 +300,7 @@ void WorkItemExample::Run()
 		for (int i = 3; i < 7; i++)
 		{
 			// reverse servo output
-			servo_output[i-3] = servo_bias - mixer_outputs.output[i]*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
+			servo_output[i-3] = servo_bias + mixer_outputs.output[i]*(SERVO_CAN_CONTROL_DATA_MAX - SERVO_CAN_CONTROL_DATA_MIN)/2 + (SERVO_CAN_CONTROL_DATA_MAX + SERVO_CAN_CONTROL_DATA_MIN)/2;
 		}
 		if(_armed){
 			set_servo_postion(can_port_2, &servo_output[0]);
