@@ -19,6 +19,7 @@ PARAM_DEFINE_FLOAT(BAT_CELL_V, 22.5f);
  * @value 10000 100Hz
  * @value 5000 200Hz
  * @value 2500 400Hz
+ * @value 1250 800Hz
  * @reboot_required true
  */
 PARAM_DEFINE_INT32(DB_INTERVAL, 10000);

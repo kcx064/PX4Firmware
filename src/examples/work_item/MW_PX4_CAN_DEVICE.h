@@ -46,7 +46,7 @@ class MW_CAN_DEVICE {
 class MW_H7CAN_DEVICE: public MW_CAN_DEVICE{
 public:
 	MW_H7CAN_DEVICE (){
-	MW_CAN_DEVICE();	
+		MW_CAN_DEVICE();
 	};
 	uavcan::ICanIface* canHandleMap[MW_CAN_MODULES_MAX] = {};
 	uint8_T isLoopback;
@@ -55,21 +55,21 @@ public:
     uint8_T receiveMessage(uint8_T CANModule, uint8_T* rxData, uint32_T *id, uint8_T *idType, uint8_T *remote, uint8_T *length);
     uint8_T transmitMessage(uint8_T CANModule, uint8_T* txData, uint32_T id, uint8_T idType, uint8_T remote, uint8_T length);
     void close(uint8_T CANModule);
- };
+};
 #elif defined(MW_CAN_NUTTX)
 class MW_NUTTX_CAN_DEVICE: public MW_CAN_DEVICE{
 	uint8_T setBaudRate(uint8_T CANModule, uint32_T BaudRate);
 	uint8_T setTestMode(uint8_T CANModule, uint8_T mode);
 public:
 	MW_NUTTX_CAN_DEVICE (){
-	MW_CAN_DEVICE();	
+	MW_CAN_DEVICE();
 	};
 	int8_T canHandleMap[MW_CAN_MODULES_MAX] = {0};
     uint8_T init(uint8_T CANModule,uint32_T baudRate, uint8_T mode);
     uint8_T receiveMessage(uint8_T CANModule, uint8_T* rxData, uint32_T *id, uint8_T *idType, uint8_T *remote, uint8_T *length);
     uint8_T transmitMessage(uint8_T CANModule, uint8_T* txData, uint32_T id, uint8_T idType, uint8_T remote, uint8_T length);
 	void close(uint8_T CANModule);
-	
+
  };
  #endif
 #ifdef __cplusplus

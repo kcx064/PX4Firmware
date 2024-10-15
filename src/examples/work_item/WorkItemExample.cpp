@@ -53,9 +53,16 @@
 #define SERVO_UAVCAN_CONTROL_DATA_TYPE_ID (SERVO_UAVCAN_PRIORITY << 24 | SERVO_UAVCAN_DATATYPE_ID << 8 | SERVO_UAVCAN_SOURCE_NODE_ID)
 
 #define SERVO1_CAN_REPORT_DATA_TYPE_ID 0x1807E364
+#define SERVO1_CAN_HEARTBEAT_DATA_TYPE_ID 0x18015564
+
 #define SERVO2_CAN_REPORT_DATA_TYPE_ID 0x1807E365
+#define SERVO2_CAN_HEARTBEAT_DATA_TYPE_ID 0x18015565
+
 #define SERVO3_CAN_REPORT_DATA_TYPE_ID 0x1807E366
+#define SERVO3_CAN_HEARTBEAT_DATA_TYPE_ID 0x18015566
+
 #define SERVO4_CAN_REPORT_DATA_TYPE_ID 0x1807E367
+#define SERVO4_CAN_HEARTBEAT_DATA_TYPE_ID 0x18015567
 
 #define SERVO_UAVCAN_SERVO_INFO_SIGNATURE 0xCA8F4B8F97D23B57
 #define SERVO_CAN_CONTROL_DATA_MIN 0
@@ -147,8 +154,12 @@ bool WorkItemExample::init()
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC3_CAN_REPORT_3_DATA_TYPE_ID, 1);
 	/* declare received servo report */
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO1_CAN_REPORT_DATA_TYPE_ID, 1);
+	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO1_CAN_REPORT_DATA_TYPE_ID, 1);
+	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO2_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO2_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO3_CAN_REPORT_DATA_TYPE_ID, 1);
+	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO3_CAN_REPORT_DATA_TYPE_ID, 1);
+	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO4_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO4_CAN_REPORT_DATA_TYPE_ID, 1);
 	/* bms */
 	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_INFO_DATA_TYPE_ID, 1);
@@ -277,9 +288,6 @@ void WorkItemExample::Run()
 		retcanInit = MW_CAN_Open(can_port_2, _param_db_can_rate.get(), 0);
 		PX4_INFO("can port 2 open, ret: %d", (int)retcanInit);
 	}else{/* can port has been initialized, therefore send data */
-		collect_esc_report(can_port_1);
-		collect_servo_report(can_port_2);
-		collect_bms_report(can_port_2);
 		/* set esc cmd msg */
 		for (int i = 0; i < 3; i++)
 		{
@@ -313,6 +321,18 @@ void WorkItemExample::Run()
 				set_servo_postion(can_port_2, &servo_output[0]);
 			}
 		}
+		//获取CAN控制器状态
+		// can2rxqueue = MW_CAN_getRxQueue(can_port_2);
+		// can2errorcount = MW_CAN_getErrorCount(can_port_2);
+		//receive data 由于接收servo消息的时候存在阻塞代码，所以先发送再接收
+		collect_esc_report(can_port_1);
+		collect_servo_report(can_port_2);
+		collect_bms_report(can_port_2);
+		// while(!MW_CAN_ReceiveMessage(can_port_2, &receiveData[0], SERVO1_CAN_HEARTBEAT_DATA_TYPE_ID, 1, &remote, &Length));
+		// {
+		// 	PX4_WARN("time stamp: %f", static_cast<double>(hrt_absolute_time())*1e-6);
+		// }
+		// PX4_INFO("read complete");
 	}
 
 
@@ -377,129 +397,129 @@ void WorkItemExample::decode_servo_report(uint8_t can_index, uint32_T id, uint8_
 	if(!MW_CAN_ReceiveMessages_By_ID(can_index, &receiveData[0], id, 1, &remote, &Length))
 	{
 		// PX4_WARN("receive data start %d",sevo_index);
-		switch (servo_decode_state[sevo_index].servoinfo_state)
-		{
-		case PACK_H:
-			if(receiveData[7] & 0x80){
-				servo_decode_state[sevo_index].servoinfo_state = decode_servoinfo_state::PACK_L;
-				servo_decode_state[sevo_index].msg_SN = receiveData[7] & 0x1F;
-				//低字节放置到高位
-				servo_decode_state[sevo_index].receivePack = 0;
-				servo_decode_state[sevo_index].receivePack = (uint64_t)receiveData[2] << 8*7 | (uint64_t)receiveData[3] << 8*6 | (uint64_t)receiveData[4] << 8*5 | (uint64_t)receiveData[5] << 8*4 | (uint64_t)receiveData[6] << 8*3;
-				// PX4_INFO("received data 1 is %llX",servo_decode_state[sevo_index].receivePack);
-			}
-			break;
-
-		case PACK_L:
-			if( (receiveData[7] & 0x40) && ((receiveData[7] & 0x1F) == servo_decode_state[sevo_index].msg_SN) ){
-				//TODO: 增加签名校验部分
-				//第一阶段
-				servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack | (uint64_t)receiveData[0] << 8*2 | (uint64_t)receiveData[1] << 8*1 | (uint64_t)receiveData[2];
-				// PX4_INFO("received data 2 is %llX",servo_decode_state[sevo_index].receivePack);
-				for (uint8_t i = 0; i < 5; i++)
-				{
-					if(servoinfo_uavcan_struct[i] <= 8){//目标数据小于等于8位，那么一次提取即可
-						//提取数据
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - servoinfo_uavcan_struct[i]);
-						//左移，去除已经提取的数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << servoinfo_uavcan_struct[i];
-					}else{//目标数据大于8位，根据厂家给出的定义，消息字段最长有16位，那么二次提取即可
-						//提取低八位数据
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - 8);
-						//左移，去除已经提取的低八位数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 8;
-
-						//提取高位数据，可能不足八位
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].servoinfo_raw_data[i] | (( servo_decode_state[sevo_index].receivePack >> (64 - (servoinfo_uavcan_struct[i] - 8)) ) << 8);
-						//左移，去除已经提取的数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << (servoinfo_uavcan_struct[i] - 8);
-					}
-				}
-				//第二阶段
-				servo_decode_state[sevo_index].receivePack = 0;
-				servo_decode_state[sevo_index].receivePack = (uint64_t)receiveData[2] << 8*7 | (uint64_t)receiveData[3] << 8*6 | (uint64_t)receiveData[4] << 8*5 | (uint64_t)receiveData[5] << 8*4 | (uint64_t)receiveData[6] << 8*3;
-				// PX4_INFO("received data 3 is %llX",servo_decode_state[sevo_index].receivePack);
-				servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 5;//手动计算得到的5，目的是消除上一个字段的高5位，该高五位在第一阶段已经提取
-				for (uint8_t i = 5; i < 9; i++)
-				{
-					if(servoinfo_uavcan_struct[i] <= 8){//目标数据小于8字节，那么一次提取即可
-						//提取数据
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - servoinfo_uavcan_struct[i]);
-						//左移，去除已经提取的数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << servoinfo_uavcan_struct[i];
-					}else{//目标数据大于8位，根据厂家给出的定义，消息字段最长有16位，那么二次提取即可
-						//提取低八位数据
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - 8);
-						//左移，去除已经提取的低八位数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 8;
-
-						//提取高位数据，可能不足八位
-						servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].servoinfo_raw_data[i] | (( servo_decode_state[sevo_index].receivePack >> (64 - (servoinfo_uavcan_struct[i] - 8)) ) << 8);
-						//左移，去除已经提取的数据
-						servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << (servoinfo_uavcan_struct[i] - 8);
-					}
-				}
-				//第三阶段整理数据，并发送
-				servo_report[sevo_index].timestamp = hrt_absolute_time();
-				servo_report[sevo_index].servo_id = servo_decode_state[sevo_index].servoinfo_raw_data[0];//uint5
-				servo_report[sevo_index].pwm_input = servo_decode_state[sevo_index].servoinfo_raw_data[1];//uint12
-				servo_report[sevo_index].pos_cmd = (int16_t)servo_decode_state[sevo_index].servoinfo_raw_data[2];//int16
-				servo_report[sevo_index].pos_sensor = (int16_t)servo_decode_state[sevo_index].servoinfo_raw_data[3];//int16
-				servo_report[sevo_index].voltage = servo_decode_state[sevo_index].servoinfo_raw_data[4];//uint12
-				servo_report[sevo_index].current = servo_decode_state[sevo_index].servoinfo_raw_data[5];//uint10
-				servo_report[sevo_index].pcb_temp = servo_decode_state[sevo_index].servoinfo_raw_data[6];//uint10
-				servo_report[sevo_index].motor_temp = servo_decode_state[sevo_index].servoinfo_raw_data[7];//uint10
-				servo_report[sevo_index].statusinfo_flags = servo_decode_state[sevo_index].servoinfo_raw_data[8];//uint5
-				orb_publish(ORB_ID(servoinfo), _servoinfo_sub[sevo_index], &servo_report[sevo_index]);
-
-				if(sevo_index == 0){
-					_24v_status.timestamp = hrt_absolute_time();
-
-					_24v_status.voltage_v = servo_report[sevo_index].voltage*0.01;
-					_24v_status.voltage_filtered_v = servo_report[sevo_index].voltage*0.01;
-
-					_24v_status.current_a = -1;
-					_24v_status.current_filtered_a = 0;
-					_24v_status.current_average_a = -1;
-
-					_24v_status.discharged_mah = -1;
-					_24v_status.time_remaining_s = NAN;
-					_24v_status.temperature = NAN;
-					_24v_status.is_powering_off = false;
-
-					_24v_status.scale = 1;
-					_24v_status.cell_count = 6;
-
-
-					_24v_status.voltage_cell_v[0] = _24v_status.voltage_v/6;
-					_24v_status.voltage_cell_v[1] = _24v_status.voltage_v/6;
-					_24v_status.voltage_cell_v[2] = _24v_status.voltage_v/6;
-					_24v_status.voltage_cell_v[3] = _24v_status.voltage_v/6;
-					_24v_status.voltage_cell_v[4] = _24v_status.voltage_v/6;
-					_24v_status.voltage_cell_v[5] = _24v_status.voltage_v/6;
-
-					_24v_status.remaining = (servo_report[sevo_index].voltage*0.01 - 22.2)/(25.2-22.2);//4.2*6 - 3.7*6
-
-					_24v_status.id = 3;
-
-					if(_24v_status.voltage_v < 25.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
-					if(_24v_status.voltage_v < 23.4f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
-					if(_24v_status.voltage_v < 22.8f)_24v_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
-					if(_24v_status.voltage_v < 22.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
-					if(_24v_status.voltage_v < 21.0f)_24v_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
-
-					_24v_status.connected = true;
-
-					_24v_status_pub.publish(_24v_status);
-				}
-
-			}
-			servo_decode_state[sevo_index].servoinfo_state = decode_servoinfo_state::PACK_H;
-			break;
-
-		default:
-			break;
+	switch (servo_decode_state[sevo_index].servoinfo_state)
+	{
+	case PACK_H:
+		if(receiveData[7] & 0x80){
+			servo_decode_state[sevo_index].servoinfo_state = decode_servoinfo_state::PACK_L;
+			servo_decode_state[sevo_index].msg_SN = receiveData[7] & 0x1F;
+			//低字节放置到高位
+			servo_decode_state[sevo_index].receivePack = 0;
+			servo_decode_state[sevo_index].receivePack = (uint64_t)receiveData[2] << 8*7 | (uint64_t)receiveData[3] << 8*6 | (uint64_t)receiveData[4] << 8*5 | (uint64_t)receiveData[5] << 8*4 | (uint64_t)receiveData[6] << 8*3;
+			// PX4_INFO("received data 1 is %llX",servo_decode_state[sevo_index].receivePack);
 		}
+		break;
+
+	case PACK_L:
+		if( (receiveData[7] & 0x40) && ((receiveData[7] & 0x1F) == servo_decode_state[sevo_index].msg_SN) ){
+			//TODO: 增加签名校验部分
+			//第一阶段
+			servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack | (uint64_t)receiveData[0] << 8*2 | (uint64_t)receiveData[1] << 8*1 | (uint64_t)receiveData[2];
+			// PX4_INFO("received data 2 is %llX",servo_decode_state[sevo_index].receivePack);
+			for (uint8_t i = 0; i < 5; i++)
+			{
+				if(servoinfo_uavcan_struct[i] <= 8){//目标数据小于等于8位，那么一次提取即可
+					//提取数据
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - servoinfo_uavcan_struct[i]);
+					//左移，去除已经提取的数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << servoinfo_uavcan_struct[i];
+				}else{//目标数据大于8位，根据厂家给出的定义，消息字段最长有16位，那么二次提取即可
+					//提取低八位数据
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - 8);
+					//左移，去除已经提取的低八位数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 8;
+
+					//提取高位数据，可能不足八位
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].servoinfo_raw_data[i] | (( servo_decode_state[sevo_index].receivePack >> (64 - (servoinfo_uavcan_struct[i] - 8)) ) << 8);
+					//左移，去除已经提取的数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << (servoinfo_uavcan_struct[i] - 8);
+				}
+			}
+			//第二阶段
+			servo_decode_state[sevo_index].receivePack = 0;
+			servo_decode_state[sevo_index].receivePack = (uint64_t)receiveData[2] << 8*7 | (uint64_t)receiveData[3] << 8*6 | (uint64_t)receiveData[4] << 8*5 | (uint64_t)receiveData[5] << 8*4 | (uint64_t)receiveData[6] << 8*3;
+			// PX4_INFO("received data 3 is %llX",servo_decode_state[sevo_index].receivePack);
+			servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 5;//手动计算得到的5，目的是消除上一个字段的高5位，该高五位在第一阶段已经提取
+			for (uint8_t i = 5; i < 9; i++)
+			{
+				if(servoinfo_uavcan_struct[i] <= 8){//目标数据小于8字节，那么一次提取即可
+					//提取数据
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - servoinfo_uavcan_struct[i]);
+					//左移，去除已经提取的数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << servoinfo_uavcan_struct[i];
+				}else{//目标数据大于8位，根据厂家给出的定义，消息字段最长有16位，那么二次提取即可
+					//提取低八位数据
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].receivePack >> (64 - 8);
+					//左移，去除已经提取的低八位数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << 8;
+
+					//提取高位数据，可能不足八位
+					servo_decode_state[sevo_index].servoinfo_raw_data[i] = servo_decode_state[sevo_index].servoinfo_raw_data[i] | (( servo_decode_state[sevo_index].receivePack >> (64 - (servoinfo_uavcan_struct[i] - 8)) ) << 8);
+					//左移，去除已经提取的数据
+					servo_decode_state[sevo_index].receivePack = servo_decode_state[sevo_index].receivePack << (servoinfo_uavcan_struct[i] - 8);
+				}
+			}
+			//第三阶段整理数据，并发送
+			servo_report[sevo_index].timestamp = hrt_absolute_time();
+			servo_report[sevo_index].servo_id = servo_decode_state[sevo_index].servoinfo_raw_data[0];//uint5
+			servo_report[sevo_index].pwm_input = servo_decode_state[sevo_index].servoinfo_raw_data[1];//uint12
+			servo_report[sevo_index].pos_cmd = (int16_t)servo_decode_state[sevo_index].servoinfo_raw_data[2];//int16
+			servo_report[sevo_index].pos_sensor = (int16_t)servo_decode_state[sevo_index].servoinfo_raw_data[3];//int16
+			servo_report[sevo_index].voltage = servo_decode_state[sevo_index].servoinfo_raw_data[4];//uint12
+			servo_report[sevo_index].current = servo_decode_state[sevo_index].servoinfo_raw_data[5];//uint10
+			servo_report[sevo_index].pcb_temp = servo_decode_state[sevo_index].servoinfo_raw_data[6];//uint10
+			servo_report[sevo_index].motor_temp = servo_decode_state[sevo_index].servoinfo_raw_data[7];//uint10
+			servo_report[sevo_index].statusinfo_flags = servo_decode_state[sevo_index].servoinfo_raw_data[8];//uint5
+			orb_publish(ORB_ID(servoinfo), _servoinfo_sub[sevo_index], &servo_report[sevo_index]);
+
+			if(sevo_index == 0){
+				_24v_status.timestamp = hrt_absolute_time();
+
+				_24v_status.voltage_v = servo_report[sevo_index].voltage*0.01;
+				_24v_status.voltage_filtered_v = servo_report[sevo_index].voltage*0.01;
+
+				_24v_status.current_a = -1;
+				_24v_status.current_filtered_a = 0;
+				_24v_status.current_average_a = -1;
+
+				_24v_status.discharged_mah = -1;
+				_24v_status.time_remaining_s = NAN;
+				_24v_status.temperature = NAN;
+				_24v_status.is_powering_off = false;
+
+				_24v_status.scale = 1;
+				_24v_status.cell_count = 6;
+
+
+				_24v_status.voltage_cell_v[0] = _24v_status.voltage_v/6;
+				_24v_status.voltage_cell_v[1] = _24v_status.voltage_v/6;
+				_24v_status.voltage_cell_v[2] = _24v_status.voltage_v/6;
+				_24v_status.voltage_cell_v[3] = _24v_status.voltage_v/6;
+				_24v_status.voltage_cell_v[4] = _24v_status.voltage_v/6;
+				_24v_status.voltage_cell_v[5] = _24v_status.voltage_v/6;
+
+				_24v_status.remaining = (servo_report[sevo_index].voltage*0.01 - 22.2)/(25.2-22.2);//4.2*6 - 3.7*6
+
+				_24v_status.id = 3;
+
+				if(_24v_status.voltage_v < 25.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
+				if(_24v_status.voltage_v < 23.4f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
+				if(_24v_status.voltage_v < 22.8f)_24v_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
+				if(_24v_status.voltage_v < 22.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
+				if(_24v_status.voltage_v < 21.0f)_24v_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
+
+				_24v_status.connected = true;
+
+				_24v_status_pub.publish(_24v_status);
+			}
+
+		}
+		servo_decode_state[sevo_index].servoinfo_state = decode_servoinfo_state::PACK_H;
+		break;
+
+	default:
+		break;
+	}
 	}else{
 		// PX4_INFO("receive data error %d",sevo_index);
 	}

@@ -12,9 +12,9 @@ typedef struct
 	uint32_T 	ID;
 	uint8_T		Data[8] ={0};
 	uint8_T 	CANModule;
-    uint8_T 	IDType;
-    uint8_T 	Length;
-    uint8_T 	Remote;
+	uint8_T 	IDType;
+	uint8_T 	Length;
+	uint8_T 	Remote;
 	uint8_T 	Valid;
 
 }CANMsgType;
@@ -91,10 +91,10 @@ void MW_CAN_AssignGlobalBufferForID(uint8_T CANModule, uint32_T id, uint8_T idTy
 #endif
 #ifdef MW_NUM_CAN_RECEIVE_RAW
 	globalCANRxBuffer[canRxIdAssigner].CANModule = CANModule;
-    globalCANRxBuffer[canRxIdAssigner].ID = id;
-    globalCANRxBuffer[canRxIdAssigner].IDType = idType;
+	globalCANRxBuffer[canRxIdAssigner].ID = id;
+	globalCANRxBuffer[canRxIdAssigner].IDType = idType;
 	globalCANRxBuffer[canRxIdAssigner].Valid = 0;
-    canRxIdAssigner = canRxIdAssigner + 1U;
+	canRxIdAssigner = canRxIdAssigner + 1U;
 	if (canRxIdAssigner>MW_NUM_CAN_RECEIVE_RAW)
 	{
 		canRxIdAssigner = MW_NUM_CAN_RECEIVE_RAW;
@@ -137,12 +137,13 @@ MW_CAN_Status_T MW_CAN_ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData,
 			/* Store in global buffer for Raw Data Type CAN Receive block */
 			for(msgIdx=0;msgIdx<MW_NUM_CAN_RECEIVE_RAW;msgIdx++)
 			{
-				if((globalCANRxBuffer[msgIdx].ID == rx_id) && (globalCANRxBuffer[msgIdx].IDType == rx_idType) && (globalCANRxBuffer[msgIdx].CANModule == CANModule))
+				if( (globalCANRxBuffer[msgIdx].Valid==0) && (globalCANRxBuffer[msgIdx].ID == rx_id) && (globalCANRxBuffer[msgIdx].IDType == rx_idType) && (globalCANRxBuffer[msgIdx].CANModule == CANModule))
 				{
 					globalCANRxBuffer[msgIdx].Length = rx_length;
 					globalCANRxBuffer[msgIdx].Remote = rx_remote;
 					globalCANRxBuffer[msgIdx].Valid = 1;
 					memcpy(&globalCANRxBuffer[msgIdx].Data[0], &rx_data[0], rx_length);
+					break;
 				}
 			}
 		}
@@ -153,16 +154,16 @@ MW_CAN_Status_T MW_CAN_ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData,
 	{
 		if((id == globalCANRxBuffer[msgIdx].ID) && (idType == globalCANRxBuffer[msgIdx].IDType) && (CANModule ==globalCANRxBuffer[msgIdx].CANModule) && (globalCANRxBuffer[msgIdx].Valid ==1 ))
 		{
-		for(idx=0;idx<8;idx++)
-		{
-			rxData[idx] = globalCANRxBuffer[msgIdx].Data[idx];
-					globalCANRxBuffer[msgIdx].Data[idx] =0;
-		}
-				globalCANRxBuffer[msgIdx].Valid = 0;
-		*length = globalCANRxBuffer[msgIdx].Length;
-		*remote = globalCANRxBuffer[msgIdx].Remote;
-				rxStatus =0; /* Read Sucess */
-		break;
+			for(idx=0;idx<8;idx++)
+			{
+				rxData[idx] = globalCANRxBuffer[msgIdx].Data[idx];
+				globalCANRxBuffer[msgIdx].Data[idx] =0;
+			}
+			globalCANRxBuffer[msgIdx].Valid = 0;
+			*length = globalCANRxBuffer[msgIdx].Length;
+			*remote = globalCANRxBuffer[msgIdx].Remote;
+			rxStatus =0; /* Read Sucess */
+			break;
 		}
 	}
 
