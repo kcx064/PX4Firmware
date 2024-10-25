@@ -81,6 +81,7 @@
 #include <linux/spi/spidev.h>
 #endif /* __PX4_LINUX */
 
+using namespace device;
 using namespace time_literals;
 
 #define TIMEOUT_1HZ		1300	//!< Timeout time in mS, 1000 mS (1Hz) + 300 mS delta for error
@@ -404,7 +405,7 @@ int GPS::callback(GPSCallbackType type, void *data1, int data2, void *user)
 		}
 
 	case GPSCallbackType::writeDeviceData:
-		gps->dumpGpsData((uint8_t *)data1, (size_t)data2, gps_dump_comm_mode_t::Full, true);
+			gps->dumpGpsData((uint8_t *)data1, (size_t)data2, gps_dump_comm_mode_t::Full, true);
 
 		return ::write(gps->_serial_fd, data1, (size_t)data2);
 
@@ -457,31 +458,31 @@ int GPS::pollOrRead(uint8_t *buf, size_t buf_length, int timeout)
 
 	//Poll only for the serial data. In the same thread we also need to handle orb messages,
 	//so ideally we would poll on both, the serial fd and orb subscription. Unfortunately the
-	//two pollings use different underlying mechanisms (at least under posix), which makes this
-	//impossible. Instead we limit the maximum polling interval and regularly check for new orb
-	//messages.
-	//FIXME: add a unified poll() API
+		//two pollings use different underlying mechanisms (at least under posix), which makes this
+		//impossible. Instead we limit the maximum polling interval and regularly check for new orb
+		//messages.
+		//FIXME: add a unified poll() API
 	const int max_timeout = 50;
 
-	pollfd fds[1];
+		pollfd fds[1];
 	fds[0].fd = _serial_fd;
-	fds[0].events = POLLIN;
+		fds[0].events = POLLIN;
 
 	int ret = poll(fds, sizeof(fds) / sizeof(fds[0]), math::min(max_timeout, timeout));
 
-	if (ret > 0) {
-		/* if we have new data from GPS, go handle it */
-		if (fds[0].revents & POLLIN) {
-			/*
-			 * We are here because poll says there is some data, so this
-			 * won't block even on a blocking device. But don't read immediately
-			 * by 1-2 bytes, wait for some more data to save expensive read() calls.
-			 * If we have all requested data available, read it without waiting.
-			 * If more bytes are available, we'll go back to poll() again.
-			 */
+		if (ret > 0) {
+			/* if we have new data from GPS, go handle it */
+			if (fds[0].revents & POLLIN) {
+				/*
+				 * We are here because poll says there is some data, so this
+				 * won't block even on a blocking device. But don't read immediately
+				 * by 1-2 bytes, wait for some more data to save expensive read() calls.
+				 * If we have all requested data available, read it without waiting.
+				 * If more bytes are available, we'll go back to poll() again.
+				 */
 			const unsigned character_count = 32; // minimum bytes that we want to read
-			unsigned baudrate = _baudrate == 0 ? 115200 : _baudrate;
-			const unsigned sleeptime = character_count * 1000000 / (baudrate / 10);
+				unsigned baudrate = _baudrate == 0 ? 115200 : _baudrate;
+				const unsigned sleeptime = character_count * 1000000 / (baudrate / 10);
 
 #ifdef __PX4_NUTTX
 			int err = 0;
@@ -498,14 +499,14 @@ int GPS::pollOrRead(uint8_t *buf, size_t buf_length, int timeout)
 
 			ret = ::read(_serial_fd, buf, buf_length);
 
-			if (ret > 0) {
-				_num_bytes_read += ret;
-			}
+				if (ret > 0) {
+					_num_bytes_read += ret;
+				}
 
-		} else {
-			ret = -1;
+			} else {
+				ret = -1;
+			}
 		}
-	}
 
 	return ret;
 
@@ -681,7 +682,7 @@ int GPS::setBaudrate(unsigned baud)
 		return -1;
 	}
 
-	return 0;
+		return 0;
 }
 
 void GPS::initializeCommunicationDump()
@@ -853,17 +854,17 @@ GPS::run()
 #ifdef __PX4_LINUX
 
 			if (_interface == GPSHelper::Interface::SPI) {
-				int spi_speed = 1000000; // make sure the bus speed is not too high (required on RPi)
+			int spi_speed = 1000000; // make sure the bus speed is not too high (required on RPi)
 				int status_value = ::ioctl(_serial_fd, SPI_IOC_WR_MAX_SPEED_HZ, &spi_speed);
 
-				if (status_value < 0) {
-					PX4_ERR("SPI_IOC_WR_MAX_SPEED_HZ failed for %s (%d)", _port, errno);
-				}
+			if (status_value < 0) {
+				PX4_ERR("SPI_IOC_WR_MAX_SPEED_HZ failed for %s (%d)", _port, errno);
+			}
 
 				status_value = ::ioctl(_serial_fd, SPI_IOC_RD_MAX_SPEED_HZ, &spi_speed);
 
-				if (status_value < 0) {
-					PX4_ERR("SPI_IOC_RD_MAX_SPEED_HZ failed for %s (%d)", _port, errno);
+			if (status_value < 0) {
+				PX4_ERR("SPI_IOC_RD_MAX_SPEED_HZ failed for %s (%d)", _port, errno);
 				}
 			}
 
