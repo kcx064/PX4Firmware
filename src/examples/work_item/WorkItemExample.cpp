@@ -92,11 +92,10 @@
 #define ESC_CAN_CONTROL_DATA_MIN 0
 #define ESC_CAN_CONTROL_DATA_MAX 4095
 
-// #define ESC_CHANNEL_NONE "none"
-// #define ESC_CHANNEL_PWM  "pwm"
-// #define ESC_CHANNEL_CAN1 "can1"
-// #define ESC_CHANNEL_CAN2 "can2"
-// #define ESC_CHANNEL_UART "uart"
+/* TOF CAN */
+//默认ID为0， 如有多个设备ID可由上位机设置
+#define TOF_CAN_FRAME 0x200
+#define TOF_CAN_READ_FRAME 0x400
 
 WorkItemExample::WorkItemExample() :
 	ModuleParams(nullptr),
@@ -108,6 +107,13 @@ WorkItemExample::~WorkItemExample()
 {
 	MW_CAN_Close(can_port_1);
 	MW_CAN_Close(can_port_2);
+
+	// Unadvertise the distance sensor topic.
+	if (_tof_report_sub != nullptr) {
+		orb_unadvertise(_tof_report_sub);
+	}
+
+
 	perf_free(_loop_perf);
 	perf_free(_loop_interval_perf);
 }
@@ -135,23 +141,30 @@ bool WorkItemExample::init()
 	_servoinfo_sub[1] = orb_advertise_multi(ORB_ID(servoinfo), &servo_report[1], &servoinfo_instance[1]);
 	_servoinfo_sub[2] = orb_advertise_multi(ORB_ID(servoinfo), &servo_report[2], &servoinfo_instance[2]);
 	_servoinfo_sub[3] = orb_advertise_multi(ORB_ID(servoinfo), &servo_report[3], &servoinfo_instance[3]);
+
 	/* esc report */
 	_esc_report_sub[0] = orb_advertise_multi(ORB_ID(can_esc_report), &esc_report[0], &esc_report_instance[0]);
 	_esc_report_sub[1] = orb_advertise_multi(ORB_ID(can_esc_report), &esc_report[1], &esc_report_instance[1]);
 	_esc_report_sub[2] = orb_advertise_multi(ORB_ID(can_esc_report), &esc_report[2], &esc_report_instance[2]);
 
+	/* tof */
+	_tof_report_sub = orb_advertise_multi(ORB_ID(distance_sensor), &tof_report, &tof_report_instance);
+
 	/* declare received esc report 1 */
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC1_CAN_REPORT_1_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC2_CAN_REPORT_1_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC3_CAN_REPORT_1_DATA_TYPE_ID, 1);
+
 	/* declare received esc report 2 */
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC1_CAN_REPORT_2_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC2_CAN_REPORT_2_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC3_CAN_REPORT_2_DATA_TYPE_ID, 1);
+
 	/* declare received esc report 3 */
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC1_CAN_REPORT_3_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC2_CAN_REPORT_3_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_1, ESC3_CAN_REPORT_3_DATA_TYPE_ID, 1);
+
 	/* declare received servo report */
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO1_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO1_CAN_REPORT_DATA_TYPE_ID, 1);
@@ -161,12 +174,15 @@ bool WorkItemExample::init()
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO3_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO4_CAN_REPORT_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, SERVO4_CAN_REPORT_DATA_TYPE_ID, 1);
+
 	/* bms */
 	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_INFO_DATA_TYPE_ID, 1);
 	MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_ALARM_DATA_TYPE_ID, 1);
 	// MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLV_DATA_TYPE_ID, 1);
 	// MW_CAN_AssignGlobalBufferForID(can_port_2, BMS_HCU_CELLT_DATA_TYPE_ID, 1);
 
+	/* TOF */
+	MW_CAN_AssignGlobalBufferForID(can_port_2, TOF_CAN_FRAME, 0); // 标准ID
 
 	return true;
 }
@@ -328,6 +344,7 @@ void WorkItemExample::Run()
 		collect_esc_report(can_port_1);
 		collect_servo_report(can_port_2);
 		collect_bms_report(can_port_2);
+		collect_tof_report(can_port_2);
 		// while(!MW_CAN_ReceiveMessage(can_port_2, &receiveData[0], SERVO1_CAN_HEARTBEAT_DATA_TYPE_ID, 1, &remote, &Length));
 		// {
 		// 	PX4_WARN("time stamp: %f", static_cast<double>(hrt_absolute_time())*1e-6);
@@ -337,6 +354,31 @@ void WorkItemExample::Run()
 
 
 	perf_end(_loop_perf);
+}
+
+void WorkItemExample::collect_tof_report(uint8_t can_index){
+	if(!MW_CAN_ReceiveMessages_By_ID(can_index, tof_frame.data_raw, TOF_CAN_FRAME, 0, &remote, &Length))
+	{
+		// if(tof_frame.data.dis_status == 0){
+		tof_report.timestamp = hrt_absolute_time();
+		tof_report.device_id = 0;
+
+		tof_report.max_distance = 2.16f;
+		tof_report.min_distance = 0.012f;
+		tof_report.current_distance = static_cast<float>(tof_frame.data.disx1000)*0.001f;
+		tof_report.variance = 0.00001f;//产品说明为3mm标准差，换算后为0.000009 m^2,四舍五入取0.00001f
+		tof_report.h_fov = 0.47f;
+		tof_report.v_fov = 0.47f;
+		tof_report.signal_quality = -1;
+		tof_report.type = distance_sensor_s::MAV_DISTANCE_SENSOR_LASER;
+		tof_report.orientation = distance_sensor_s::ROTATION_DOWNWARD_FACING;//ROTATION_DOWNWARD_FACING;//ROTATION_YAW_0
+		orb_publish(ORB_ID(distance_sensor), _tof_report_sub, &tof_report);
+		// }
+		// PX4_INFO("receive tof data");
+	}
+	else{
+		// PX4_INFO("not reeive tof data");
+	}
 }
 
 void WorkItemExample::collect_bms_report(uint8_t can_index){
@@ -380,8 +422,6 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 
 		_bms_status_pub.publish(_can_bms_status);
 	}
-
-
 }
 
 void WorkItemExample::collect_servo_report(uint8_t can_index){

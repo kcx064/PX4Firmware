@@ -58,6 +58,7 @@
 #include <uORB/topics/can_servo_ret.h>
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/esc_status.h>
+#include <uORB/topics/distance_sensor.h>
 
 #include "MW_PX4_CAN.h"
 
@@ -92,6 +93,7 @@ private:
 	void collect_servo_report(uint8_t can_index);
 	void collect_esc_report(uint8_t can_index);
 	void collect_bms_report(uint8_t can_index);
+	void collect_tof_report(uint8_t can_index);
 
 	void decode_servo_report(uint8_t can_index, uint32_T id, uint8_t sevo_index);
 	void decode_esc_report(uint8_t can_index, uint32_T id, uint8_t esc_index);
@@ -165,6 +167,10 @@ private:
 	orb_advert_t _esc_report_sub[3];
 	can_esc_report_s esc_report[3]{};
 
+	int tof_report_instance;
+	orb_advert_t _tof_report_sub;
+	distance_sensor_s tof_report{};
+
 	/*used for servoinfo report decode*/
 	enum decode_servoinfo_state
 	{
@@ -184,6 +190,18 @@ private:
 
 	const float BMS_VOLTAGE_SCALE = 0.1f;
 #pragma pack(push,1)
+	typedef union tof_frame_u
+	{
+		uint8_t data_raw[8];
+		struct tof_frame_s
+		{
+			uint32_t disx1000 : 24;
+			uint8_t dis_status : 8;
+			uint16_t signal_strength : 16;
+			uint16_t reserved : 16;
+		}data;
+	}tof_frame_t;
+
 	typedef union bms_hcu_info_u
 	{
 		uint8_t data_raw[8];
@@ -316,4 +334,5 @@ private:
 	esc_report_2_t esc_status_2;
 	esc_report_3_t esc_status_3;
 
+	tof_frame_t tof_frame;
 };
