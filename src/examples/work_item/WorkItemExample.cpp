@@ -228,7 +228,7 @@ void WorkItemExample::Run()
 
 
 		servo_bias = _param_db_servo_bias.get();
-		px4_arch_gpiowrite(DB_HIPOWER_EN, _param_db_bms_en.get());//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
+		// px4_arch_gpiowrite(DB_HIPOWER_EN, _param_db_bms_en.get());//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
 		px4_arch_gpiowrite(DB_RC_EN, _param_db_rc_sel.get());
 	}
 
@@ -242,6 +242,17 @@ void WorkItemExample::Run()
 			// access parameter value (SYS_AUTOSTART)
 			if (_param_sys_autostart.get() == 1234) {
 				// do something if SYS_AUTOSTART is 1234
+			}
+		}
+	}
+
+	if(_input_rc_sub.updated()) {
+		if(_input_rc_sub.copy(&input_rc)){
+			uint16_t ch8 = input_rc.values[7];
+			if(ch8>1700 && _param_db_bms_en.get()){
+				px4_arch_gpiowrite(DB_HIPOWER_EN, 1);
+			}else{
+				px4_arch_gpiowrite(DB_HIPOWER_EN, 0);
 			}
 		}
 	}

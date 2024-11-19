@@ -51,6 +51,7 @@
 #include <uORB/topics/vehicle_status.h>
 
 #include <uORB/topics/mixer_outputs.h>
+#include <uORB/topics/input_rc.h>
 #include <uORB/topics/can_actuator_test.h> //only for actuator debug when disarmed
 #include <uORB/topics/servoinfo.h>
 #include <uORB/topics/can_esc_report.h>
@@ -119,6 +120,8 @@ private:
 	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
 	uORB::Subscription                 _vehicle_status_sub{ORB_ID(vehicle_status)};           // regular subscription for additional data
 	uORB::Subscription                 _can_actuator_test_sub{ORB_ID(can_actuator_test)};
+	uORB::Subscription                 _input_rc_sub{ORB_ID(input_rc)};
+	input_rc_s input_rc{};
 
 	// Performance (perf) counters
 	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};

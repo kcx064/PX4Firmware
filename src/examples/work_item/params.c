@@ -58,7 +58,7 @@ PARAM_DEFINE_INT32(DB_CAN_RATE, 1000000);
  * @value 0 Disable
  * @value 1 Enable
  */
-PARAM_DEFINE_INT32(DB_BMS_EN, 1);
+PARAM_DEFINE_INT32(DB_BMS_EN, 0);
 
 /**
  * DB RC Select
