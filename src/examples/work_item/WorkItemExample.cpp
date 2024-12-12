@@ -230,6 +230,7 @@ void WorkItemExample::Run()
 		servo_bias = _param_db_servo_bias.get();
 		// px4_arch_gpiowrite(DB_HIPOWER_EN, _param_db_bms_en.get());//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
 		px4_arch_gpiowrite(DB_RC_EN, _param_db_rc_sel.get());
+		enable_servo_check = _param_db_srv_chk.get();
 	}
 
 
@@ -341,10 +342,26 @@ void WorkItemExample::Run()
 			set_servo_postion(can_port_2, &servo_output[0]);
 		}else{
 			if(!can_actuator_test.is_run){
-				servo_output[0] = servo_bias + 500;
-				servo_output[1] = servo_bias + 500;
-				servo_output[2] = servo_bias + 500;
-				servo_output[3] = servo_bias + 500;
+				/* when disarmed, ensure servo can bus is health*/
+				servo_output[0] = servo_bias + 500 + servo_check;
+				servo_output[1] = servo_bias + 500 + servo_check;
+				servo_output[2] = servo_bias + 500 + servo_check;
+				servo_output[3] = servo_bias + 500 + servo_check;
+
+				if(enable_servo_check){
+					if(servo_check >= 200)servo_check_status = 1;
+					if(servo_check <= -200)servo_check_status = 0;
+
+					if(servo_check_status == 0)
+					{
+						servo_check += 0.2f;
+					}else{
+						servo_check -= 0.2f;
+					}
+				}else{
+					servo_check = 0;
+				}
+
 				set_servo_postion(can_port_2, &servo_output[0]);
 			}
 		}
@@ -402,7 +419,7 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
 		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
 
-		_can_bms_status.current_a = (static_cast<uint16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		_can_bms_status.current_a = (static_cast<int16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
 		_can_bms_status.current_filtered_a = _can_bms_status.current_a;
 		_can_bms_status.current_average_a = -1;
 
@@ -425,11 +442,12 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.temperature = NAN;
 		_can_bms_status.time_remaining_s = NAN;
 		_can_bms_status.connected = true;
+		//144cells, MAX 4.45V/cell
 		if(_can_bms_status.voltage_v < 640.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.45
-		if(_can_bms_status.voltage_v < 561.6f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
-		if(_can_bms_status.voltage_v < 547.2f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
-		if(_can_bms_status.voltage_v < 532.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
-		if(_can_bms_status.voltage_v < 504.0f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
+		if(_can_bms_status.voltage_v < 561.6f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.9
+		if(_can_bms_status.voltage_v < 547.2f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.8
+		if(_can_bms_status.voltage_v < 532.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.7
+		if(_can_bms_status.voltage_v < 504.0f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.5
 
 		_bms_status_pub.publish(_can_bms_status);
 	}

@@ -136,7 +136,8 @@ private:
 		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate,
 		(ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
 		(ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
-		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval
+		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
+		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk
 	)
 
 
@@ -338,4 +339,8 @@ private:
 	esc_report_3_t esc_status_3;
 
 	tof_frame_t tof_frame;
+
+	float servo_check = 0;
+	uint8_t servo_check_status = 0;
+	uint8_t enable_servo_check = 0;
 };

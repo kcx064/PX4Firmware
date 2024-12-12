@@ -71,3 +71,14 @@ PARAM_DEFINE_INT32(DB_BMS_EN, 0);
  */
 PARAM_DEFINE_INT32(DB_RC_SEL, 0);
 
+/**
+ * DB Servo Check
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 DISABLE
+ * @value 1 ENABLE
+ */
+PARAM_DEFINE_INT32(DB_SRV_CHK, 1);
+
