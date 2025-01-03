@@ -199,10 +199,11 @@ private:
 		uint8_t data_raw[8];
 		struct tof_frame_s
 		{
-			uint32_t disx1000 : 24;
+			uint32_t dis_mm : 24;
 			uint8_t dis_status : 8;
 			uint16_t signal_strength : 16;
-			uint16_t reserved : 16;
+			uint8_t index : 8;
+			uint8_t reserved : 8;
 		}data;
 	}tof_frame_t;
 

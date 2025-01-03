@@ -387,22 +387,21 @@ void WorkItemExample::Run()
 void WorkItemExample::collect_tof_report(uint8_t can_index){
 	if(!MW_CAN_ReceiveMessages_By_ID(can_index, tof_frame.data_raw, TOF_CAN_FRAME, 0, &remote, &Length))
 	{
-		// if(tof_frame.data.dis_status == 0){
-		tof_report.timestamp = hrt_absolute_time();
-		tof_report.device_id = 0;
+		if((tof_frame.data.index == 5 || tof_frame.data.index == 6 || tof_frame.data.index == 9 || tof_frame.data.index == 10) && tof_frame.data.dis_status != 255){
+			tof_report.timestamp = hrt_absolute_time();
+			tof_report.device_id = 0;
 
-		tof_report.max_distance = 2.16f;
-		tof_report.min_distance = 0.012f;
-		tof_report.current_distance = static_cast<float>(tof_frame.data.disx1000)*0.001f;
-		tof_report.variance = 0.00001f;//产品说明为3mm标准差，换算后为0.000009 m^2,四舍五入取0.00001f
-		tof_report.h_fov = 0.47f;
-		tof_report.v_fov = 0.47f;
-		tof_report.signal_quality = -1;
-		tof_report.type = distance_sensor_s::MAV_DISTANCE_SENSOR_LASER;
-		tof_report.orientation = distance_sensor_s::ROTATION_DOWNWARD_FACING;//ROTATION_DOWNWARD_FACING;//ROTATION_YAW_0
-		orb_publish(ORB_ID(distance_sensor), _tof_report_sub, &tof_report);
-		// }
-		// PX4_INFO("receive tof data");
+			tof_report.max_distance = 4.0f;
+			tof_report.min_distance = 0.015f;
+			tof_report.current_distance = static_cast<float>(tof_frame.data.dis_mm)*0.001f;
+			tof_report.variance = 0.0001f;//产品说明为1cm标准差，换算后为0.0001 m^2
+			tof_report.h_fov = 0.4f;
+			tof_report.v_fov = 0.4f;
+			tof_report.signal_quality = -1;
+			tof_report.type = distance_sensor_s::MAV_DISTANCE_SENSOR_LASER;
+			tof_report.orientation = distance_sensor_s::ROTATION_DOWNWARD_FACING;//ROTATION_DOWNWARD_FACING;//ROTATION_YAW_0
+			orb_publish(ORB_ID(distance_sensor), _tof_report_sub, &tof_report);
+		}
 	}
 	else{
 		// PX4_INFO("not reeive tof data");
@@ -419,7 +418,8 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
 		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
 
-		_can_bms_status.current_a = (static_cast<int16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		_can_bms_status.current_a = (static_cast<int16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		//放电电流为负值，充电电流为正值
 		_can_bms_status.current_filtered_a = _can_bms_status.current_a;
 		_can_bms_status.current_average_a = -1;
 
