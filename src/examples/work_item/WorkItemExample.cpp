@@ -418,8 +418,8 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
 		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
 
-		_can_bms_status.current_a = (static_cast<int16_t>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f;//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
-		//放电电流为负值，充电电流为正值
+		_can_bms_status.current_a = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f);//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		//厂家设置为放电电流为负值，充电电流为正值，且原始数据带有1000A偏置量。因此原始数据乘以电流转换系数，减去1000偏置量，取负值，即为实际电流值
 		_can_bms_status.current_filtered_a = _can_bms_status.current_a;
 		_can_bms_status.current_average_a = -1;
 
