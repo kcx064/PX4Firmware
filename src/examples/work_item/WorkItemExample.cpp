@@ -231,6 +231,7 @@ void WorkItemExample::Run()
 		// px4_arch_gpiowrite(DB_HIPOWER_EN, _param_db_bms_en.get());//enable for BMS, for stander CUAV X7 Pro, this will enable UART 5V power
 		px4_arch_gpiowrite(DB_RC_EN, _param_db_rc_sel.get());
 		enable_servo_check = _param_db_srv_chk.get();
+		esc_cmd_send = _param_db_esc_send.get();
 	}
 
 
@@ -413,7 +414,6 @@ void WorkItemExample::collect_bms_report(uint8_t can_index){
 	&& !MW_CAN_ReceiveMessages_By_ID(can_index, bms_hcu_alarm.data_raw, BMS_HCU_ALARM_DATA_TYPE_ID, 1, &remote, &Length)
 	)
 	{
-
 		_can_bms_status.timestamp = hrt_absolute_time();
 		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
 		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
@@ -733,7 +733,9 @@ void WorkItemExample::set_esc_value(uint8_t can_index, int16_t *cmd, int16_t esc
 
 		esc_msg_data[7] = ~esc_msg_data[6];
 
-		send_ret[j] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
+		if(esc_cmd_send & (1<<j)){
+			send_ret[j] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
+		}
 	}
 	_can_esc_ret.timestamp = hrt_absolute_time();
 	memcpy(_can_esc_ret.send_ret, send_ret, sizeof(send_ret));

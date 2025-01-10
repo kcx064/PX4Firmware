@@ -82,3 +82,16 @@ PARAM_DEFINE_INT32(DB_RC_SEL, 0);
  */
 PARAM_DEFINE_INT32(DB_SRV_CHK, 1);
 
+/**
+ * Whether send ESC cmd when disarmed
+ *
+ * @min 0
+ * @max 7
+ * @group DB
+ *
+ * @bit 0 enbale left
+ * @bit 1 enable right
+ * @bit 2 enable rear
+ */
+PARAM_DEFINE_INT32(DB_ESC_SEND, 7);
+

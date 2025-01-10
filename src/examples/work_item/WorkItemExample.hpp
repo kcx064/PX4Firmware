@@ -137,7 +137,8 @@ private:
 		(ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
 		(ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
-		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk
+		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
+		(ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send
 	)
 
 
@@ -344,4 +345,5 @@ private:
 	float servo_check = 0;
 	uint8_t servo_check_status = 0;
 	uint8_t enable_servo_check = 0;
+	uint8_t esc_cmd_send = 0;
 };
