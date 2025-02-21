@@ -39,6 +39,8 @@
 # add upstream flight tasks (they are being handled differently from the core inside the python script)
 list(APPEND flight_tasks_to_add
 	Orbit
+	MyTask
+	ManualAcceleration2
 )
 # remove possible duplicates
 list(REMOVE_DUPLICATES flight_tasks_to_add)
