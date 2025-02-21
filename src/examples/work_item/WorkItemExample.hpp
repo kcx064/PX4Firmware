@@ -41,6 +41,7 @@
 
 #include <drivers/drv_hrt.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/systemlib/mavlink_log.h>
 
 #include <uORB/Publication.hpp>
 #include <uORB/PublicationMulti.hpp>
@@ -60,6 +61,7 @@
 #include <uORB/topics/battery_status.h>
 #include <uORB/topics/esc_status.h>
 #include <uORB/topics/distance_sensor.h>
+#include <uORB/topics/actuator_controls.h>
 
 #include "MW_PX4_CAN.h"
 
@@ -99,6 +101,9 @@ private:
 	void decode_servo_report(uint8_t can_index, uint32_T id, uint8_t sevo_index);
 	void decode_esc_report(uint8_t can_index, uint32_T id, uint8_t esc_index);
 
+	//mavlink log on GCS(QGC)
+	orb_advert_t _mavlink_log_pub{nullptr};
+
 	// Publications
 	// uORB::Publication<orb_test_s> _orb_test_pub{ORB_ID(orb_test)};
 	uORB::PublicationMulti<esc_status_s> _esc_status_pub{ORB_ID(esc_status)};
@@ -121,6 +126,7 @@ private:
 	uORB::Subscription                 _vehicle_status_sub{ORB_ID(vehicle_status)};           // regular subscription for additional data
 	uORB::Subscription                 _can_actuator_test_sub{ORB_ID(can_actuator_test)};
 	uORB::Subscription                 _input_rc_sub{ORB_ID(input_rc)};
+	uORB::Subscription                 _actuators_0_sub{ORB_ID(actuator_controls_0)};
 	input_rc_s input_rc{};
 
 	// Performance (perf) counters
@@ -138,7 +144,8 @@ private:
 		(ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
 		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
-		(ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send
+		(ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send,
+		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode
 	)
 
 
@@ -157,6 +164,7 @@ private:
 	uint16_t servo_output[4] = {500,500,500,500};
 
 	mixer_outputs_s mixer_outputs{};
+	actuator_controls_s actuator_controls_0{};
 	can_actuator_test_s can_actuator_test{};
 	bool _can_test_run{false};
 

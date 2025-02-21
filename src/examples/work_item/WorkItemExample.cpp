@@ -259,6 +259,33 @@ void WorkItemExample::Run()
 		}
 	}
 
+	if(_actuators_0_sub.updated()){
+		if(_actuators_0_sub.copy(&actuator_controls_0)){
+			uint16_t rc_throttle = input_rc.values[3];//rc throttle stick value, middle value 1500
+			float virtual_throttle = actuator_controls_0.control[3];//throttle of virtual control
+
+			//when middle throttle stick, check virtual control throttle value
+			if(rc_throttle<1550 && rc_throttle>1450){
+				// if no-load, set to zero-velocity mode
+				if(virtual_throttle>0.6f && virtual_throttle<=0.8f)
+				{
+					if(_param_mpc_pos_mode.get()==4){
+						mavlink_log_warning(&_mavlink_log_pub, "no-load; set to velocity mode");
+						_param_mpc_pos_mode.set(6);
+						_param_mpc_pos_mode.commit();
+					}
+				// if loaded, set to position mode
+				}else if(virtual_throttle>0.8f){
+					if(_param_mpc_pos_mode.get()==6){
+						mavlink_log_info(&_mavlink_log_pub, "loaded; set to position mode");
+						_param_mpc_pos_mode.set(4);
+						_param_mpc_pos_mode.commit();
+					}
+				}
+			}
+		}
+	}
+
 	/* used for can test with diarmd */
 	if (_can_actuator_test_sub.updated()){
 		_can_actuator_test_sub.copy(&can_actuator_test);
