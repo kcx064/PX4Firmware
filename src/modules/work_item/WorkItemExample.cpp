@@ -68,6 +68,9 @@
 #define SERVO_CAN_CONTROL_DATA_MIN 0
 #define SERVO_CAN_CONTROL_DATA_MAX 1000
 
+/* sinemotion esc can */
+#define BROADCAST_THROTTLE_2_ID 20011
+
 /* esc can */
 #define ESC1_CAN_CONTROL_DATA_TYPE_ID 1
 
@@ -89,7 +92,7 @@
 
 #define MOTOR_POLES 10
 
-#define ESC_CAN_CONTROL_DATA_MIN 0
+#define ESC_CAN_CONTROL_DATA_MIN 250  //idle speed thrust
 #define ESC_CAN_CONTROL_DATA_MAX 4095
 
 /* TOF CAN */
@@ -99,7 +102,8 @@
 
 WorkItemExample::WorkItemExample() :
 	ModuleParams(nullptr),
-	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::test1)
+	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::test1),
+	sinemotion_esc(_signature)
 {
 }
 
@@ -232,6 +236,9 @@ void WorkItemExample::Run()
 		px4_arch_gpiowrite(DB_RC_EN, _param_db_rc_sel.get());
 		enable_servo_check = _param_db_srv_chk.get();
 		esc_cmd_send = _param_db_esc_send.get();
+		esc_vendor = _param_db_esc_vendor.get();
+		aerial_wearable_en = _param_db_aw_en.get();
+
 	}
 
 
@@ -259,29 +266,70 @@ void WorkItemExample::Run()
 		}
 	}
 
-	if(_actuators_0_sub.updated()){
-		if(_actuators_0_sub.copy(&actuator_controls_0)){
-			uint16_t rc_throttle = input_rc.values[3];//rc throttle stick value, middle value 1500
-			float virtual_throttle = actuator_controls_0.control[3];//throttle of virtual control
+	if(_att_sub.updated()){
+		if(_att_sub.copy(&_att)){
+			R_eb = Quatf(_att.q);
+			// mavlink_log_info(&_mavlink_log_pub, "roll:%f pitch:%f yaw:%f", att.roll, att.pitch, att.yaw);
+		}
+	}
 
-			//when middle throttle stick, check virtual control throttle value
-			if(rc_throttle<1550 && rc_throttle>1450){
-				// if no-load, set to zero-velocity mode
-				if(virtual_throttle>0.6f && virtual_throttle<=0.8f)
-				{
-					if(_param_mpc_pos_mode.get()==4){
-						mavlink_log_warning(&_mavlink_log_pub, "no-load; set to velocity mode");
-						_param_mpc_pos_mode.set(6);
-						_param_mpc_pos_mode.commit();
-					}
-				// if loaded, set to position mode
-				}else if(virtual_throttle>0.8f){
-					if(_param_mpc_pos_mode.get()==6){
-						mavlink_log_info(&_mavlink_log_pub, "loaded; set to position mode");
-						_param_mpc_pos_mode.set(4);
-						_param_mpc_pos_mode.commit();
-					}
+	if(_actuators_0_sub.updated() && aerial_wearable_en){
+		if(_actuators_0_sub.copy(&actuator_controls_0)){
+			float virtual_throttle = actuator_controls_0.control[3];//throttle of virtual control
+			_db_value.timestamp = hrt_absolute_time();
+			_db_value.thrust[0] = virtual_throttle*R_eb(2,0);
+			_db_value.thrust[1] = virtual_throttle*R_eb(2,1);
+			_db_value.thrust[2] = virtual_throttle*R_eb(2,2);
+			_db_value_pub.publish(_db_value);
+
+			/*according to ch7 switch mode*/
+			if(input_rc.values[6]>1600){
+				if(_param_mpc_pos_mode.get()==4){
+					mavlink_log_warning(&_mavlink_log_pub, "velocity mode");
+					_param_mpc_pos_mode.set(6);
+					_param_mpc_pos_mode.commit();
 				}
+			}else{
+				if(_param_mpc_pos_mode.get()==6){
+					mavlink_log_info(&_mavlink_log_pub, "position mode");
+					_param_mpc_pos_mode.set(4);
+					_param_mpc_pos_mode.commit();
+				}
+			}
+
+			/* when middle throttle stick, check virtual control throttle value */
+			// uint16_t rc_throttle = input_rc.values[3];//rc throttle stick value, middle value 1500
+			// if(rc_throttle<1525 && rc_throttle>1475 && input_rc.values[0]<1525 && input_rc.values[0]>1475 && input_rc.values[1]<1525 && input_rc.values[1]>1475 && input_rc.values[2]<1525 && input_rc.values[2]>1475){
+			// 	if(_db_value.thrust[0]>=0.1f || _db_value.thrust[0]<=-0.1f || _db_value.thrust[1]>=0.1f || _db_value.thrust[1]<=-0.1f)
+			// 	// if(virtual_throttle < 0.65f || virtual_throttle>0.7f)
+			// 	{
+			// 		if(_param_mpc_pos_mode.get()==4){
+			// 			mavlink_log_warning(&_mavlink_log_pub, "velocity mode");
+			// 			_param_mpc_pos_mode.set(6);
+			// 			_param_mpc_pos_mode.commit();
+			// 		}
+			// 	}else{
+			// 		if(_param_mpc_pos_mode.get()==6){
+			// 			mavlink_log_warning(&_mavlink_log_pub, "position mode");
+			// 			_param_mpc_pos_mode.set(4);
+			// 			_param_mpc_pos_mode.commit();
+			// 		}
+			// 	}
+			// }else{
+			// 	if(_param_mpc_pos_mode.get()==6){
+			// 		mavlink_log_info(&_mavlink_log_pub, "position mode");
+			// 		_param_mpc_pos_mode.set(4);
+			// 		_param_mpc_pos_mode.commit();
+			// 	}
+			// }
+		}
+	}
+
+	if(_manual_control_switches_sub.updated()){
+		if(_manual_control_switches_sub.copy(&_manual_control_switches))
+		{
+			if(_manual_control_switches.kill_switch==1){
+				mavlink_log_warning(&_mavlink_log_pub, "DB output is kill switch");
 			}
 		}
 	}
@@ -349,9 +397,12 @@ void WorkItemExample::Run()
 		{
 			esc_output[i] = mixer_outputs.output[i]*(ESC_CAN_CONTROL_DATA_MAX - ESC_CAN_CONTROL_DATA_MIN)/2 + (ESC_CAN_CONTROL_DATA_MAX + ESC_CAN_CONTROL_DATA_MIN)/2;
 		}
-		if(_armed){
+		/* output esc cmd according to _armd and kill switch */
+		if(_armed && _manual_control_switches.kill_switch!=1){
+			/* armd and kill switch disabled */
 			set_esc_value(can_port_1,  &esc_output[0], used_esc_frq);
 		}else{
+			/* disarm or kill_switch disable*/
 			if(!can_actuator_test.is_run){
 				esc_output[0] = 0;
 				esc_output[1] = 0;
@@ -599,8 +650,8 @@ void WorkItemExample::decode_servo_report(uint8_t can_index, uint32_T id, uint8_
 				_24v_status.id = 3;
 
 				if(_24v_status.voltage_v < 25.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
-				if(_24v_status.voltage_v < 23.4f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
-				if(_24v_status.voltage_v < 22.8f)_24v_status.warning = battery_status_s::BATTERY_WARNING_CRITICAL;//3.8
+				// if(_24v_status.voltage_v < 23.4f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
+				if(_24v_status.voltage_v < 22.8f)_24v_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.8
 				if(_24v_status.voltage_v < 22.2f)_24v_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
 				if(_24v_status.voltage_v < 21.0f)_24v_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
 
@@ -744,25 +795,50 @@ void WorkItemExample::set_servo_postion(uint8_t can_index, uint16_t *cmd){
 void WorkItemExample::set_esc_value(uint8_t can_index, int16_t *cmd, int16_t esc_frq){
 	uint8_t esc_msg_data[8] = {0,};
 	int8_t send_ret[3] = {-1, -1, -1};
-	for (int j = 0; j < 3; j++)
-	{
-		memset(esc_msg_data, 0, sizeof(esc_msg_data));
+	// for HD3智鸥电调
+	if(esc_vendor==0){
+		for (int j = 0; j < 3; j++)
+		{
+			memset(esc_msg_data, 0, sizeof(esc_msg_data));
 
-		esc_msg_data[0] = uint8_t(cmd[j] & 0xFF);
-		esc_msg_data[1] = uint8_t((cmd[j] >> 8) & 0xFF);
+			esc_msg_data[0] = uint8_t(cmd[j] & 0xFF);
+			esc_msg_data[1] = uint8_t((cmd[j] >> 8) & 0xFF);
 
-		esc_msg_data[4] = uint8_t(esc_frq & 0xFF);
-		esc_msg_data[5] = uint8_t((esc_frq >> 8) & 0xFF);
+			esc_msg_data[4] = uint8_t(esc_frq & 0xFF);
+			esc_msg_data[5] = uint8_t((esc_frq >> 8) & 0xFF);
 
-		for(int i=0; i<6 ; i++){
-			esc_msg_data[6] += esc_msg_data[i];
+			for(int i=0; i<6 ; i++){
+				esc_msg_data[6] += esc_msg_data[i];
+			}
+
+			esc_msg_data[7] = ~esc_msg_data[6];
+
+			if(esc_cmd_send & (1<<j)){
+				send_ret[j] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
+			}
 		}
+	}
 
-		esc_msg_data[7] = ~esc_msg_data[6];
 
-		if(esc_cmd_send & (1<<j)){
-			send_ret[j] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], ESC1_CAN_CONTROL_DATA_TYPE_ID + j, 1, 0, 8);
+	/* HD3 弦动电调 */
+	if(esc_vendor==1){
+		sinemotion_esc.add_esc_cmd(0x21,1);
+		sinemotion_esc.add_esc_cmd(0x22,2);
+		sinemotion_esc.add_esc_cmd(0x23,3);
+		// sinemotion_esc.add_esc_cmd(0x24,4);
+		// sinemotion_esc.add_esc_cmd(0x25,5);
+		// sinemotion_esc.add_esc_cmd(0x26,6);
+		// sinemotion_esc.add_esc_cmd(0x27,7);
+		// sinemotion_esc.add_esc_cmd(0x28,8);
+
+		uint8_t len = 0;
+		while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
+		{
+			// int8_t ret = sinemotion_esc.get_package(&esc_msg_data[0], &len);
+			// if (ret==0)break;
+			send_ret[0] = MW_CAN_TransmitMessage(can_index, &esc_msg_data[0], BROADCAST_THROTTLE_2_ID, 1, 0, len);
 		}
+		sinemotion_esc.clear_esc_cmds();
 	}
 	_can_esc_ret.timestamp = hrt_absolute_time();
 	memcpy(_can_esc_ret.send_ret, send_ret, sizeof(send_ret));

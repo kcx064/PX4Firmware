@@ -717,7 +717,7 @@ bool MixingOutput::updateStaticMixer()
 	// static_cast<double>(outputs[2]),
 	// static_cast<double>(outputs[3]),
 	// static_cast<double>(outputs[4]),
-	// static_cast<double>(outputs[5]));
+	// static_cast<double>(outputs[5]);
 
 	/* the output limit call takes care of out of band errors, NaN and constrains */
 	output_limit_calc(_throttle_armed, mixed_num_outputs, outputs);

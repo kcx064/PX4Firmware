@@ -95,3 +95,26 @@ PARAM_DEFINE_INT32(DB_SRV_CHK, 1);
  */
 PARAM_DEFINE_INT32(DB_ESC_SEND, 7);
 
+/**
+ * DB ESC Vendor
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 IntelligenceGull
+ * @value 1 Sinemotion
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(DB_ESC_VDR, 0);
+
+/**
+ * DB Aerial Wearable Enable
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 Disable
+ * @value 1 Enable
+ */
+PARAM_DEFINE_INT32(DB_AW_EN, 0);
+

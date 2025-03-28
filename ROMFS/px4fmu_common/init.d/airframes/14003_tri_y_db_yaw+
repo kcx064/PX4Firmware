@@ -25,7 +25,7 @@
 param set-default MAV_TYPE 15
 param set UAVCAN_ENABLE 0
 
-set PWM_OUT 1234567
+set PWM_OUT 12345678
 # set PWM_AUX_OUT 1234
 
 # set MIXER_AUX tri_y_db_yaw+

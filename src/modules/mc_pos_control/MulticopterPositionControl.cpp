@@ -502,6 +502,12 @@ void MulticopterPositionControl::Run()
 			local_pos_sp.timestamp = hrt_absolute_time();
 			_local_pos_sp_pub.publish(local_pos_sp);
 
+			// This message is used by logger
+			velocity_ctrl_status_s velocity_ctrl_status{};
+			_control.getVelocityCtrlStatus(velocity_ctrl_status);
+			velocity_ctrl_status.timestamp = hrt_absolute_time();
+			_vel_ctrl_status_pub.publish(velocity_ctrl_status);
+
 			// Publish attitude setpoint output
 			vehicle_attitude_setpoint_s attitude_setpoint{};
 			_control.getAttitudeSetpoint(attitude_setpoint);

@@ -120,6 +120,8 @@ void LoggedTopics::add_default_topics()
 	add_topic("mixer_outputs",200);
 	add_topic("can_esc_ret", 100);
 	add_topic("can_servo_ret", 100);
+	add_topic("db_value",50);
+	add_topic("velocity_ctrl_status", 50);
 
 	// multi topics
 	add_optional_topic_multi("actuator_outputs", 100, 3);

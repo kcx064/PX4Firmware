@@ -249,6 +249,13 @@ void PositionControl::getLocalPositionSetpoint(vehicle_local_position_setpoint_s
 	_thr_sp.copyTo(local_position_setpoint.thrust);
 }
 
+void PositionControl::getVelocityCtrlStatus(velocity_ctrl_status_s &velocity_ctrl_status) const
+{
+	velocity_ctrl_status.vx_integ = _vel_int(0);
+	velocity_ctrl_status.vy_integ = _vel_int(1);
+	velocity_ctrl_status.vz_integ = _vel_int(2);
+}
+
 void PositionControl::getAttitudeSetpoint(vehicle_attitude_setpoint_s &attitude_setpoint) const
 {
 	ControlMath::thrustToAttitude(_thr_sp, _yaw_sp, attitude_setpoint);

@@ -33,11 +33,11 @@
 set(LIBUAVCAN_DIR ${PX4_SOURCE_DIR}/src/drivers/uavcan/libuavcan)
 set(LIBUAVCAN_DIR_DRIVERS ${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers)
 
-
 px4_add_module(
-	MODULE examples__work_item
+	MODULE modules__work_item
 	MAIN work_item_example
 	COMPILE_FLAGS
+		# -DCMAKE_CXX_COMPILER_ARG1=-std=c++11
 		#-DDEBUG_BUILD   # uncomment for PX4_DEBUG output
 		#-O0             # uncomment when debugging
 		-DMW_CAN_UAVCAN
@@ -48,6 +48,8 @@ px4_add_module(
 	SRCS
 		WorkItemExample.cpp
 		WorkItemExample.hpp
+		# throttle_dronecan_msg.cpp
+		throttle_dronecan_msg.hpp
 		MW_PX4_CAN.cpp
 		MW_PX4_CAN.h
 		MW_H7CAN.cpp
@@ -62,4 +64,5 @@ px4_add_module(
 		${LIBUAVCAN_DIR}/libuavcan/include/dsdlc_generated
 	DEPENDS
 		px4_work_queue
+
 	)

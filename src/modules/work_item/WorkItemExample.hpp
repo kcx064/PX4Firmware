@@ -62,8 +62,16 @@
 #include <uORB/topics/esc_status.h>
 #include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/manual_control_switches.h>
+#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/db_value.h>
 
 #include "MW_PX4_CAN.h"
+#include "throttle_dronecan_msg.hpp"
+
+using matrix::Dcmf;
+using matrix::Eulerf;
+using matrix::Quatf;
 
 using namespace time_literals;
 
@@ -120,14 +128,28 @@ private:
 	uORB::Publication<can_servo_ret_s> _can_servo_ret_pub{ORB_ID(can_servo_ret)};
 	can_servo_ret_s _can_servo_ret{};
 
+	uORB::Publication<db_value_s> _db_value_pub{ORB_ID(db_value)};
+	db_value_s _db_value{};
+
 	// Subscriptions
-	uORB::SubscriptionCallbackWorkItem _mixer_output_sub{this, ORB_ID(mixer_outputs)};        // subscription that schedules WorkItemExample when updated
-	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
-	uORB::Subscription                 _vehicle_status_sub{ORB_ID(vehicle_status)};           // regular subscription for additional data
-	uORB::Subscription                 _can_actuator_test_sub{ORB_ID(can_actuator_test)};
-	uORB::Subscription                 _input_rc_sub{ORB_ID(input_rc)};
-	uORB::Subscription                 _actuators_0_sub{ORB_ID(actuator_controls_0)};
-	input_rc_s input_rc{};
+	uORB::SubscriptionCallbackWorkItem	_mixer_output_sub{this, ORB_ID(mixer_outputs)};        // subscription that schedules WorkItemExample when updated
+	uORB::SubscriptionInterval		_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
+	uORB::Subscription			_vehicle_status_sub{ORB_ID(vehicle_status)};           // regular subscription for additional data
+
+	uORB::Subscription			_can_actuator_test_sub{ORB_ID(can_actuator_test)};
+	can_actuator_test_s			can_actuator_test{};
+
+	uORB::Subscription			_input_rc_sub{ORB_ID(input_rc)};
+	input_rc_s 				input_rc{};
+
+	uORB::Subscription			_actuators_0_sub{ORB_ID(actuator_controls_0)};
+	actuator_controls_s 			actuator_controls_0{};
+
+	uORB::Subscription 			_manual_control_switches_sub{ORB_ID(manual_control_switches)};
+	manual_control_switches_s 		_manual_control_switches{};
+
+	uORB::Subscription		   	_att_sub{ORB_ID(vehicle_attitude)};
+	vehicle_attitude_s 			_att{};
 
 	// Performance (perf) counters
 	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
@@ -145,8 +167,10 @@ private:
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
 		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
 		(ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send,
-		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode
-	)
+		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode,
+		(ParamInt<px4::params::DB_ESC_VDR>) _param_db_esc_vendor,
+		(ParamInt<px4::params::DB_AW_EN>) _param_db_aw_en
+	)//最后一行没有逗号
 
 
 	bool _armed{false};
@@ -164,8 +188,8 @@ private:
 	uint16_t servo_output[4] = {500,500,500,500};
 
 	mixer_outputs_s mixer_outputs{};
-	actuator_controls_s actuator_controls_0{};
-	can_actuator_test_s can_actuator_test{};
+
+
 	bool _can_test_run{false};
 
 	uint8_t remote;
@@ -202,6 +226,8 @@ private:
 	servo_decode_t servo_decode_state[4];
 
 	const float BMS_VOLTAGE_SCALE = 0.1f;
+
+	Dcmf R_eb;
 #pragma pack(push,1)
 	typedef union tof_frame_u
 	{
@@ -354,4 +380,9 @@ private:
 	uint8_t servo_check_status = 0;
 	uint8_t enable_servo_check = 0;
 	uint8_t esc_cmd_send = 0;
+	uint8_t aerial_wearable_en = 0;
+	uint8_t esc_vendor = 0;
+
+	uint64_t _signature{0x1437AC612DC2C691};
+	throttle_pwm<3> sinemotion_esc;
 };

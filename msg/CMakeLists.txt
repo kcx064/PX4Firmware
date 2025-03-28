@@ -212,6 +212,8 @@ set(msg_files
 	can_esc_report.msg
 	can_esc_ret.msg
 	can_servo_ret.msg
+	db_value.msg
+	velocity_ctrl_status.msg
 )
 
 if(NOT px4_constrained_flash_build)
