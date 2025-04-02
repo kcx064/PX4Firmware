@@ -250,6 +250,13 @@ set(msg_files
 	WheelEncoders.msg
 	Wind.msg
 	YawEstimatorStatus.msg
+	MixerOutputs.msg
+	DbValue.msg
+	CanActuatorTest.msg
+	CanEscReport.msg
+	CanEscRet.msg
+	CanServoRet.msg
+	Servoinfo.msg
 )
 list(SORT msg_files)
 

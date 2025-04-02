@@ -93,6 +93,7 @@ if(CONFIG_MODULES_MC_RATE_CONTROL)
 
 		# [12000, 12999] Octo Cox
 		12001_octo_cox
+		12002_octo_cox_mix
 
 		# [14000, 14999] MC with tilt
 		14001_generic_mc_with_tilt
