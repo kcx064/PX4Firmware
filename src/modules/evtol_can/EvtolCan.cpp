@@ -147,11 +147,10 @@ bool EvtolCan::init()
 		{
 			for(size_t i = 0; i<br_msg_id_num; i++)
 			{
-				AssignGlobalBufferForID(0, br->get_msg_id()[i], 1);
+				AssignGlobalBufferForID(br->get_can_module(), br->get_msg_id()[i], 1);
 			}
 		}else{
 			mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer %u is too low", MW_NUM_CAN_RECEIVE_RAW);
-			mavlink_log_warning(&_mavlink_log_pub, "excessive messages will not be received");
 		}
 
 		if (ret < 0) {
@@ -203,7 +202,7 @@ void EvtolCan::Run()
 			for(size_t i = 0; i<br_msg_id_num; i++)
 			{
 				_msg_id = br->get_msg_id()[i];
-				if(!ReceiveMessages_By_ID(0, &rxData[0], _msg_id, 1, &remote, &Length))
+				if(!ReceiveMessages_By_ID(br->get_can_module(), &rxData[0], _msg_id, 1, &remote, &Length))
 				{
 					br->msg_cb(_msg_id, &rxData[0], Length);
 				}

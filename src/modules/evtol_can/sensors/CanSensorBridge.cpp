@@ -5,7 +5,7 @@
 
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
-	list.add(new esc_status());
+	list.add(new esc_status(0));
 }
 
 CanSensorBridgeBase::~CanSensorBridgeBase()
