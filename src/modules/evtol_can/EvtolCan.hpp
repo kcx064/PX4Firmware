@@ -24,6 +24,7 @@
 #include "actuators/canservo.hpp"
 #include "actuators/CanMixingInterfaceEsc.hpp"
 #include "actuators/CanMixingInterfaceServo.hpp"
+#include "sensors/CanSensorBridge.hpp"
 
 #include <uORB/Publication.hpp>
 #include <uORB/PublicationMulti.hpp>
@@ -66,10 +67,18 @@ public:
 
 private:
 	void Run() override;
+	void AssignGlobalBufferForID(uint8_T CANModule, uint32_T id, uint8_T idType);
+
+	uint8_t ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length);
 
 	MW_H7CAN_DEVICE 		&_h7can_device;
 	canesc				_canesc;
 	canservo			_canservo;
+
+
+	//mavlink log on GCS(QGC)
+	orb_advert_t 			_mavlink_log_pub{nullptr};
+	bool                    	_node_init{false};
 
 
 	pthread_mutex_t			_node_mutex;
@@ -80,6 +89,24 @@ private:
 
 
 	static EvtolCan			*_instance;			///< singleton pointer
+
+	List<ICanSensorBridge *>	_can_sensor_bridges;		///< List of active sensor bridges
+
+
+	typedef struct
+	{
+		uint32_T 	ID;
+		uint8_T		Data[8] ={0};
+		uint8_T 	CANModule;
+		uint8_T 	IDType;
+		uint8_T 	Length;
+		uint8_T 	Remote;
+		uint8_T 	Valid;
+
+	}CANMsgType;
+	// volatile
+	CANMsgType globalCANRxBuffer[MW_NUM_CAN_RECEIVE_RAW];
+	uint8_t canRxIdAssigner = 0;
 
 	// Parameters
 	DEFINE_PARAMETERS(

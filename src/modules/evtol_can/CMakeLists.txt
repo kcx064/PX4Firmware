@@ -41,7 +41,7 @@ px4_add_module(
 		-DUAVCAN_CPP_VERSION=UAVCAN_CPP03
 		-DUAVCAN_STM32H7_NUTTX
 		-DUAVCAN_STM32H7_NUM_IFACES=2
-		-DMW_NUM_CAN_RECEIVE_RAW=35 #22
+		-DMW_NUM_CAN_RECEIVE_RAW=22 #22
 	SRCS
 		EvtolCan.cpp
 		EvtolCan.hpp
@@ -54,6 +54,9 @@ px4_add_module(
 		actuators/CanMixingInterfaceServo.hpp
 		actuators/dcdc.hpp
 		actuators/CanDeviceInterface.hpp
+		sensors/CanSensorBridge.cpp
+		sensors/CanSensorBridge.hpp
+		sensors/esc_status.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include
