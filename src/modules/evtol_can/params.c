@@ -118,3 +118,27 @@ PARAM_DEFINE_INT32(DB_ESC_VDR, 0);
  */
 PARAM_DEFINE_INT32(DB_AW_EN, 0);
 
+/**
+ * HD DCDC power control
+ *
+ * This param will be reset to 0 (WAITE_CMD) after power cmd sent.
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 WAIE_CMD
+ * @value 1 POWER_OFF
+ * @value 2 POWER_ON
+ * @value 4 RESET
+ */
+PARAM_DEFINE_INT32(DCDC_POW, 0);
+
+/**
+ * HD DCDC power address
+ *
+ * @min 1
+ * @max 254
+ * @group DB
+ */
+PARAM_DEFINE_INT32(DCDC_ADDR, 1);
+

@@ -19,6 +19,7 @@
 // #include <px4_platform_common/time.h>
 
 #include "can_driver/MW_PX4_CAN_DEVICE.h"
+#include "actuators/dcdc.hpp"
 #include "actuators/canesc.hpp"
 #include "actuators/canservo.hpp"
 #include "actuators/CanMixingInterfaceEsc.hpp"
@@ -70,9 +71,12 @@ private:
 	canesc				_canesc;
 	canservo			_canservo;
 
+
 	pthread_mutex_t			_node_mutex;
 	CanMixingInterfaceEsc 		_can_interface_esc{_node_mutex, _canesc};
 	CanMixingInterfaceServo		_can_interface_servo{_node_mutex, _canservo};
+
+	dcdc				_dcdc;
 
 
 	static EvtolCan			*_instance;			///< singleton pointer
@@ -80,16 +84,16 @@ private:
 	// Parameters
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
-		(ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
-		(ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias,
-		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate,
-		(ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
-		(ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
-		(ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
-		(ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send,
-		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode,
-		(ParamInt<px4::params::DB_ESC_VDR>) _param_db_esc_vendor,
-		(ParamInt<px4::params::DB_AW_EN>) _param_db_aw_en
+		// (ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
+		// (ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias,
+		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate
+		// (ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
+		// (ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
+		// (ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
+		// (ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send,
+		// (ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode,
+		// (ParamInt<px4::params::DB_ESC_VDR>) _param_db_esc_vendor,
+		// (ParamInt<px4::params::DB_AW_EN>) _param_db_aw_en
 	)//最后一行没有逗号
 
 	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};

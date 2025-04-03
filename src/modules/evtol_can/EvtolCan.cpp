@@ -10,7 +10,8 @@ EvtolCan::EvtolCan(MW_H7CAN_DEVICE& h7can_device) :
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan),
 	_h7can_device(h7can_device),
 	_canesc(_h7can_device),
-	_canservo(_h7can_device)
+	_canservo(_h7can_device),
+	_dcdc(_node_mutex, _h7can_device)
 {
 	int res = pthread_mutex_init(&_node_mutex, nullptr);
 	_h7can_device.init(0, _param_db_can_rate.get(), 0);
@@ -87,6 +88,7 @@ int EvtolCan::start()
 
 	_instance->_can_interface_esc.ScheduleNow();
 	_instance->_can_interface_servo.ScheduleNow();
+	_instance->_dcdc.ScheduleOnInterval(1_s);
 	return 0;
 }
 

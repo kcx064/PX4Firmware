@@ -52,6 +52,8 @@ px4_add_module(
 		actuators/throttle_dronecan_msg.hpp
 		actuators/CanMixingInterfaceEsc.hpp
 		actuators/CanMixingInterfaceServo.hpp
+		actuators/dcdc.hpp
+		actuators/CanDeviceInterface.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include
