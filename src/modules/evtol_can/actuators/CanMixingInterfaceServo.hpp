@@ -3,6 +3,8 @@
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
 
+#include "canservo.hpp"
+
 class CanMixingInterfaceServo : public OutputModuleInterface
 {
 public:
@@ -24,7 +26,7 @@ private:
 	pthread_mutex_t &_node_mutex;
 	canservo &_can_servo_controller;
 
-	MixingOutput _mixing_output{"CAN_SV", 8, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+	MixingOutput _mixing_output{"CAN_SV", canservo::MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
 
 	uORB::PublicationMulti<actuator_outputs_s> _actuator_outputs_can_pub{ORB_ID(actuator_outputs_can)};
 };

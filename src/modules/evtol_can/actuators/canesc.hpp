@@ -13,44 +13,62 @@
 #include <drivers/drv_hrt.h>
 #include <lib/mixer_module/mixer_module.hpp>
 
+#include <uORB/Publication.hpp>
+#include <uORB/PublicationMulti.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/topics/debug_value.h>
+
 class canesc
 {
 
 public:
 	static constexpr int MAX_ACTUATORS = esc_status_s::CONNECTED_ESC_MAX;
-	canesc(MW_H7CAN_DEVICE& h7can_device_ref);
+	canesc(MW_H7CAN_DEVICE& h7can_device_ref):
+		_h7can_device(h7can_device_ref),
+		sinemotion_esc(sinemotion_esc_throttle_signature,8)
+	{
+	}
+
 	~canesc() = default;
 
 	void update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs);
 
+	int32_t _rotor_num{8};
+
+	void set_rotor_num(int32_t rotor_num)
+	{
+		_rotor_num = rotor_num;
+
+		//设置uavcan消息长度以及是否需要CRC字段
+		sinemotion_esc.set_esc_num(_rotor_num);
+	}
+
 private:
 	MW_H7CAN_DEVICE 		&_h7can_device;
 
-	uint64_t sinemotion_esc_throttle_signature{0x1437AC612DC2C691};
-	throttle_pwm<8> 		sinemotion_esc;
+	uint64_t 			sinemotion_esc_throttle_signature{0x1437AC612DC2C691};
+	throttle_pwm 			sinemotion_esc;
+
+
+	uORB::PublicationMulti<debug_value_s> _debug_pub{ORB_ID(debug_value)};
 
 };
 
-canesc::canesc(MW_H7CAN_DEVICE& h7can_device_ref):
-	_h7can_device(h7can_device_ref),
-	sinemotion_esc(sinemotion_esc_throttle_signature)
-{
-}
 
 void
 canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs)
 {
+	debug_value_s debug_value{};
+	debug_value.timestamp = hrt_absolute_time();
+	debug_value.value = _rotor_num;
+	_debug_pub.publish(debug_value);
+
+
+	for(int i=0; i<_rotor_num; i++){
+		sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
+	}
 
 	uint8_t esc_msg_data[8] = {0,};
-	sinemotion_esc.add_esc_cmd(0x21,outputs[0]);
-	sinemotion_esc.add_esc_cmd(0x22,outputs[1]);
-	sinemotion_esc.add_esc_cmd(0x23,outputs[2]);
-	sinemotion_esc.add_esc_cmd(0x24,outputs[3]);
-	sinemotion_esc.add_esc_cmd(0x25,outputs[4]);
-	sinemotion_esc.add_esc_cmd(0x26,outputs[5]);
-	sinemotion_esc.add_esc_cmd(0x27,outputs[6]);
-	sinemotion_esc.add_esc_cmd(0x28,outputs[7]);
-
 	uint8_t len = 0;
 	while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
 	{

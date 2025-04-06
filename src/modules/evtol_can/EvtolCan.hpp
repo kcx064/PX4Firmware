@@ -11,7 +11,6 @@
 #include <lib/systemlib/mavlink_log.h>
 
 // #include <drivers/device/device.h>
-// #include <drivers/drv_hrt.h>
 // #include <drivers/drv_pwm_output.h>
 #include <lib/mixer_module/mixer_module.hpp>
 // #include <px4_platform_common/px4_config.h>
@@ -92,6 +91,7 @@ private:
 
 	List<ICanSensorBridge *>	_can_sensor_bridges;		///< List of active sensor bridges
 
+	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
 
 	typedef struct
 	{
@@ -111,16 +111,8 @@ private:
 	// Parameters
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
-		// (ParamFloat<px4::params::BAT_CELL_V>) _param_bat_cell_v,
-		// (ParamInt<px4::params::DB_SERVO_BIAS>) _param_db_servo_bias,
-		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate
-		// (ParamInt<px4::params::DB_BMS_EN>) _param_db_bms_en,
-		// (ParamInt<px4::params::DB_RC_SEL>) _param_db_rc_sel,
-		// (ParamInt<px4::params::DB_SRV_CHK>) _param_db_srv_chk,
-		// (ParamInt<px4::params::DB_ESC_SEND>) _param_db_esc_send,
-		// (ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode,
-		// (ParamInt<px4::params::DB_ESC_VDR>) _param_db_esc_vendor,
-		// (ParamInt<px4::params::DB_AW_EN>) _param_db_aw_en
+		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate,
+		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count
 	)//最后一行没有逗号
 
 	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};

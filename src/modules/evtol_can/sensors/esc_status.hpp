@@ -1,5 +1,16 @@
 #include "CanSensorBridge.hpp"
 
+#include <lib/perf/perf_counter.h>
+#include <lib/systemlib/mavlink_log.h>
+
+#include <uORB/Publication.hpp>
+#include <uORB/PublicationMulti.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include "uORB/topics/esc_status.h"
+
+using namespace time_literals;
+
 namespace SinemotionESC {
 	constexpr uint8_t Priority = 0x18;
 	constexpr uint8_t BaseId = 0x20;
@@ -111,6 +122,10 @@ public:
 
 	void msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len) override;
 
+	uint8_t check_escs_status();
+
+	esc_status_s	_esc_status{};
+	uORB::PublicationMulti<esc_status_s> _esc_status_pub{ORB_ID(esc_status)};
 	const uint32_t *get_msg_id() override
 	{
 		return msg_id_list;
@@ -169,55 +184,69 @@ void esc_status::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
 	SinemotionESC::status_u status;
 	//根据msg_id,将rxData存入相应联合体中
 	memcpy(&status, rxData, 8);
-	switch (msg_id)
+
+	//对uint32_t msg_id取中间两个字节作为uint16_t uavcan_msg_id
+	uint16_t uavcan_msg_id = (msg_id >> 8) & 0xFFFF;
+	//对uint32_t msg_id取最后一个字节作为uint8_t source_node_id
+	uint8_t esc_index = (msg_id & 0xFF) - SinemotionESC::BaseId;
+
+	//TODO 此处有待优化，目前只支持8个ESC, 改为动态适应涵道和混动
+	uint8_t _rotor_count = esc_status_s::CONNECTED_ESC_MAX;
+
+	auto &ref = _esc_status.esc[esc_index];
+
+	if (esc_index < esc_status_s::CONNECTED_ESC_MAX)
 	{
-	case Esc0Status1:
-		break;
-	case Esc0Status2:
-		break;
-	case Esc0Status3:
-		break;
-	case Esc1Status1:
-		break;
-	case Esc1Status2:
-		break;
-	case Esc1Status3:
-		break;
-	case Esc2Status1:
-		break;
-	case Esc2Status2:
-		break;
-	case Esc2Status3:
-		break;
-	case Esc3Status1:
-		break;
-	case Esc3Status2:
-		break;
-	case Esc3Status3:
-		break;
-	case Esc4Status1:
-		break;
-	case Esc4Status2:
-		break;
-	case Esc4Status3:
-		break;
-	case Esc5Status1:
-		break;
-	case Esc5Status2:
-		break;
-	case Esc5Status3:
-		break;
-	case Esc6Status1:
-		break;
-	case Esc6Status2:
-		break;
-	case Esc6Status3:
-		break;
-	case Esc7Status1:
-		break;
-	case Esc7Status2:
-		break;
-	case Esc7Status3:
-		break;
+		ref.timestamp = hrt_absolute_time();
+		ref.esc_errorcount  = 0;
+		if(uavcan_msg_id == SinemotionESC::SinemotionStatus1)
+		{
+			// status.status1.comm_pwm;
+			// status.status1.recv_pwm;
+			ref.esc_rpm = status.status1.speed;
+		}
+
+		if(uavcan_msg_id == SinemotionESC::SinemotionStatus2)
+		{
+			ref.esc_voltage = status.status2.voltge;
+			ref.esc_current = status.status2.current;
+			// status.status2.bus_current;
+			// status.status2.v_modulation;
+		}
+		if(uavcan_msg_id == SinemotionESC::SinemotionStatus3)
+		{
+			ref.esc_address = status.status3.esc_index;
+			ref.esc_temperature = status.status3.mos_temp;
+			// status.status3.cap_temp;
+			// status.status3.mcu_temp;
+			// status.status3.motor_temp;
+			// status.status3.running_error;
+		}
 	}
+
+	_esc_status.esc_count = _rotor_count;
+	_esc_status.counter += 1;
+	_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
+	_esc_status.esc_online_flags = check_escs_status();
+	_esc_status.esc_armed_flags = (1 << _rotor_count) - 1;
+	_esc_status.timestamp = hrt_absolute_time();
+	_esc_status_pub.publish(_esc_status);
+
+
+}
+
+uint8_t esc_status::check_escs_status()
+{
+	int esc_status_flags = 0;
+	const hrt_abstime now = hrt_absolute_time();
+
+	for (int index = 0; index < esc_status_s::CONNECTED_ESC_MAX; index++) {
+
+		if (_esc_status.esc[index].timestamp > 0 && now - _esc_status.esc[index].timestamp < 1200_ms) {
+			esc_status_flags |= (1 << index);
+		}
+
+	}
+
+	return esc_status_flags;
 }

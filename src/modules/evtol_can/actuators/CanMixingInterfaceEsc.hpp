@@ -2,6 +2,9 @@
 #include <uORB/Publication.hpp>
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
+#include <uORB/topics/debug_value.h>
+
+#include "canesc.hpp"
 
 class CanMixingInterfaceEsc : public OutputModuleInterface
 {
@@ -10,7 +13,9 @@ public:
 		OutputModuleInterface(MODULE_NAME "-esc", px4::wq_configurations::test1),
   	  	_node_mutex(node_mutex),
 		_can_esc_controller(can_esc_controller)
-		{}
+		{
+			_mixing_output.setMaxNumOutputs(can_esc_controller._rotor_num);
+		}
 
 	bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 		unsigned num_outputs, unsigned num_control_groups_updated) override;
@@ -25,15 +30,19 @@ private:
 	pthread_mutex_t &_node_mutex;
 	canesc &_can_esc_controller;
 
-	MixingOutput _mixing_output{"CAN_EC", 8, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+	MixingOutput _mixing_output{"CAN_EC", canesc::MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
 
 	uORB::PublicationMulti<actuator_outputs_s> _actuator_outputs_can_pub{ORB_ID(actuator_outputs_can)};
+
+	// Parameters
+	// DEFINE_PARAMETERS(
+	// 	(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count // decided by the current airframe file
+	// )//最后一行没有逗号
 };
 
 bool CanMixingInterfaceEsc::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
 	unsigned num_control_groups_updated)
 {
-
 	// publish actuator outputs if any control group has been updated
 	if (num_control_groups_updated > 0)
 	{

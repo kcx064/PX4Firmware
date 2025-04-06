@@ -18,7 +18,10 @@ class canservo
 
 public:
 	static constexpr int MAX_ACTUATORS = 8;
-	canservo(MW_H7CAN_DEVICE& h7can_device_ref);
+	canservo(MW_H7CAN_DEVICE& h7can_device_ref):
+		_h7can_device(h7can_device_ref)
+	{
+	};
 	~canservo() = default;
 
 	void update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs);
@@ -27,10 +30,6 @@ private:
 	MW_H7CAN_DEVICE 		&_h7can_device;
 };
 
-canservo::canservo(MW_H7CAN_DEVICE& h7can_device_ref):
-	_h7can_device(h7can_device_ref)
-{
-}
 
 void
 canservo::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs)

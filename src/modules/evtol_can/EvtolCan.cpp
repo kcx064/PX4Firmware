@@ -130,6 +130,7 @@ uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint
 }
 bool EvtolCan::init()
 {
+	// Initialize can sensor bridge
 	size_t br_msg_id_num = 0;
 	size_t msg_id_num_sum = 0;
 	int ret = 0;
@@ -178,12 +179,25 @@ void EvtolCan::print_info()
 
 void EvtolCan::Run()
 {
+	// PX4_INFO("ca rotor %ld", _rotor_num);
 	size_t br_msg_id_num = 0;
 	size_t msg_id_num_sum = 0;
 	uint8_t rxData[8] = {0,};
 	uint8_t remote;
 	uint8_t Length;
 	uint32_t _msg_id = 0;
+
+	// Check if parameters have changed
+	if (_parameter_update_sub.updated()) {
+		// clear update
+		parameter_update_s param_update;
+		_parameter_update_sub.copy(&param_update);
+		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
+
+		// Initialize can actuator
+		_canesc.set_rotor_num(_ca_rotor_count.get());
+		PX4_INFO("rotor&esc number %ld",_ca_rotor_count.get());
+	}
 
 	if(!_node_init){
 		_instance->init();
@@ -234,7 +248,6 @@ int EvtolCan::start()
 	// 		return -1;
 	// 	}
 	// }
-
 	_instance = new EvtolCan(h7can);
 
 	if (_instance == nullptr) {

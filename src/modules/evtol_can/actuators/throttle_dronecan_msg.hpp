@@ -37,49 +37,43 @@ typedef union throttle_pwm_data
 #pragma pack(pop)
 
 constexpr uint8_t CMD_LENGTH = sizeof(throttle_pwm_data_t);
+constexpr uint8_t buffer_size = CMD_LENGTH*8 + 2; // 预留最多8个电调的数据长度+2个CRC
 
-template <uint8_t N>
-struct signature_and_buffer_helper {
-    static constexpr uint8_t buffer_size = (N * CMD_LENGTH > 7) ? N * CMD_LENGTH + 2 : N * CMD_LENGTH;
-};
-
-template <uint8_t N>
 class throttle_pwm
 {
 private:
+	static_assert(CMD_LENGTH > 0, "CMD_LENGTH must be greater than 0");
 
-#pragma pack(push,1)
+	static constexpr uint8_t CRC_THRESHOLD = 7;
+	uint8_t _esc_num{8};
+	uint8_t _need_crc{1};
+	uint8_t _index{0};
+	uint16_t _crc16{0};
+
+	/* Tail byte的标记位 */
+	bool start_of_transfer{false};
+	bool end_of_transfer{false};
+	uint8_t toggle{0};
+	uint8_t transfer_id{0};//width 5bit
+
+	/*已经传输的数据，需要CRC时显示包含CRC在内*/
+	uint8_t transfered_data{0};
+	/* 剩余应传输的数据，需要CRC时包含CRC两个字节在内*/
+	uint8_t remain_data{0};
+public:
+	#pragma pack(push,1)
 	typedef union signature_and_buffer
 	{
 		struct {
 			uint64_t signature;
-			uint8_t buffer[signature_and_buffer_helper<N>::buffer_size];
+			uint8_t buffer[buffer_size];
 		};
-		uint8_t raw[sizeof(uint64_t) + signature_and_buffer_helper<N>::buffer_size];
+		uint8_t raw[sizeof(uint64_t) + buffer_size];
 	}signature_and_buffer_t;
-#pragma pack(pop)
-
-static_assert(CMD_LENGTH > 0, "CMD_LENGTH must be greater than 0");
-static_assert(N>0, "N must be greater than 0");
-
-static constexpr uint8_t CRC_THRESHOLD = 7;
-uint8_t _need_crc{0};
-uint8_t _index{0};
-uint16_t _crc16{0};
-
-/* Tail byte的标记位 */
-bool start_of_transfer{false};
-bool end_of_transfer{false};
-uint8_t toggle{0};
-uint8_t transfer_id{0};//width 5bit
-
-/*已经传输的数据，需要CRC时显示包含CRC在内*/
-uint8_t transfered_data{0};
-/* 剩余应传输的数据，需要CRC时包含CRC两个字节在内*/
-uint8_t remain_data{0};
-
-public:
+	#pragma pack(pop)
 	signature_and_buffer_t _signature_and_buffer;
+	uint8_t used_buffer_size;
+
 	/**
 	 * @brief 初始化 throttle_pwm 类
 	 *
@@ -87,11 +81,16 @@ public:
 	 *
 	 * @param signature 签名值，用于初始化 _signature_and_buffer 成员变量
 	 */
-	throttle_pwm(uint64_t signature) :
-	_need_crc((N * CMD_LENGTH) > CRC_THRESHOLD),
-	_index{0},
-	_signature_and_buffer{signature,}
+	throttle_pwm(uint64_t signature, uint8_t esc_num) :
+		_signature_and_buffer{signature,}
 	{
+		used_buffer_size = (_esc_num * CMD_LENGTH > 7) ? _esc_num * CMD_LENGTH + 2 : _esc_num * CMD_LENGTH;
+	}
+
+	void set_esc_num(uint8_t esc_num)
+	{
+		_esc_num = esc_num;
+		_need_crc = ((_esc_num * CMD_LENGTH) > CRC_THRESHOLD);
 	}
 
 	/* 计算有效数据的CRC
@@ -106,7 +105,7 @@ public:
 	* Check: 0x29B1
 	*/
 	uint16_t cal_uavcan_crc(){
-		_crc16 = crc16_signature(0xFFFF,N * CMD_LENGTH, &_signature_and_buffer.buffer[2]);
+		_crc16 = crc16_signature(0xFFFF, _esc_num * CMD_LENGTH, &_signature_and_buffer.buffer[2]);
 		return _crc16;
 	}
 
@@ -124,17 +123,17 @@ public:
 		pwm_cmd.esc_id = esc_id;
 		pwm_cmd.pwm_us = pwm_us;
 
-		if(_index == N){
+		if(_index == _esc_num){
 			PX4_WARN("Overflow in ESC commands");
 			return 1;
 		}
 
-		if(_index < N){
+		if(_index < _esc_num){
 			memcpy(&_signature_and_buffer.buffer[CMD_LENGTH*_index + _need_crc*2], pwm_cmd.raw, sizeof(throttle_pwm_data_t));
 			_index++;
-			if(_index==N){//数据填满则设置开始传输标志
+			if(_index==_esc_num){//数据填满则设置开始传输标志
 				start_of_transfer = 1;
-				remain_data = _need_crc*2 + N * CMD_LENGTH;
+				remain_data = _need_crc*2 + _esc_num * CMD_LENGTH;
 				// 如果需要CRC，计算并将CRC写入缓冲区的前两个字节中
 				if(_need_crc){
 					cal_uavcan_crc();
