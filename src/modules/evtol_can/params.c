@@ -142,3 +142,14 @@ PARAM_DEFINE_INT32(DCDC_POW, 0);
  */
 PARAM_DEFINE_INT32(DCDC_ADDR, 1);
 
+/**
+ * HD DCDC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_DCDC, 1);
+

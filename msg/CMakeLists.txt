@@ -257,6 +257,7 @@ set(msg_files
 	CanEscRet.msg
 	CanServoRet.msg
 	Servoinfo.msg
+	DcdcStatus.msg
 )
 list(SORT msg_files)
 

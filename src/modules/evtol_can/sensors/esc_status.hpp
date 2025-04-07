@@ -170,7 +170,7 @@ public:
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 };
 
-const char *const esc_status::NAME = "ESC_STATUS1";
+const char *const esc_status::NAME = "ESC_STATUS";
 constexpr uint32_t esc_status::msg_id_list[];
 constexpr size_t esc_status::MSG_ID_COUNT;
 
@@ -183,7 +183,7 @@ void esc_status::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
 	SinemotionESC::status_u status;
 	//根据msg_id,将rxData存入相应联合体中
-	memcpy(&status, rxData, 8);
+	memcpy(&status.bytes, rxData, 8);
 
 	//对uint32_t msg_id取中间两个字节作为uint16_t uavcan_msg_id
 	uint16_t uavcan_msg_id = (msg_id >> 8) & 0xFFFF;
