@@ -143,7 +143,7 @@ PARAM_DEFINE_INT32(DCDC_POW, 0);
 PARAM_DEFINE_INT32(DCDC_ADDR, 1);
 
 /**
- * HD DCDC Subscribe
+ * DCDC Subscribe
  *
  * @min 0
  * @max 1
@@ -153,3 +153,46 @@ PARAM_DEFINE_INT32(DCDC_ADDR, 1);
  */
 PARAM_DEFINE_INT32(SUB_DCDC, 1);
 
+/**
+ * Sinemotion ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_SM_ESC, 1);
+
+/**
+ * IntelligenceGull ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_IG_ESC, 1);
+
+/**
+ * Himark Servo Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_HMARK_SERVO, 1);
+
+/**
+ * Fullymax Battery Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_FM_BATT, 1);

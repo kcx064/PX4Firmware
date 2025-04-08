@@ -5,14 +5,13 @@ class sensor_template : public CanSensorBridgeBase
 public:
 	static const char *const NAME;
 
-	sensor_template(uint8_t CANModule):
-		_CANModule(CANModule){};
+	sensor_template(){};
 
 	const char *get_name() const override { return NAME; }
 
 	int init() override;
 
-	void msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len) override;
+	void msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len) override;
 
 	const uint32_t *get_msg_id() override
 	{
@@ -28,7 +27,7 @@ public:
 	{
 		return _CANModule;
 	}
-	uint8_t _CANModule{0};
+
 	static constexpr uint32_t msg_id_list[] ={
 		(0x01),
 		(0x02),
@@ -46,7 +45,7 @@ int sensor_template::init()
 	return 0;
 }
 
-void sensor_template::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
+void sensor_template::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
 
 }

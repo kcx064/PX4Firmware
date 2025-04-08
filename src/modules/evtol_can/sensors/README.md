@@ -1,17 +1,16 @@
-1.要新增传感器请基于模板文件sensor_template.hpp修改
+1.要新增传感器请基于模板文件 sensor_template.hpp修改
 (包含类名，假设新增传感器为sensor_template、NAME常量、要检测的CAN消息ID)
 
 2.并在文件CanSensorBridge.cpp中的make_all方法中添加
 ```c++
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
-	list.add(new esc_status(0));
-	list.add(new sensor_template(0));
+	list.add(new esc_status());
+	list.add(new sensor_template());
 }
 ```
-其中0表示要监听的CAN接口号，对于pixhawk可以是0或者1
 
-3.在CMakeLists.txt文件中添加新增的文件，如上例则添加test.hpp
+3.在CMakeLists.txt文件中添加新增的文件，如上例则添加 sensor_template.hpp
 
 在运行的时候，src/modules/evtol_can/EvtolCan.cpp会自动调用test.hpp中的方法
 ```c++

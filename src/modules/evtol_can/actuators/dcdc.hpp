@@ -55,6 +55,8 @@ private:
 	enum POWER_STATE powerState = WAITE;
 
 	uORB::SubscriptionInterval		_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
+
+	uint8_t 				_CANModule{0};
 	// Parameters
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::DCDC_POW>) _param_dcdc_power,
@@ -79,7 +81,7 @@ dcdc::updateOutputs()
 	}
 
 	uint8_t txData[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	_h7can_device.transmitMessage(0, &txData[0], DCDC_INQUIRE_ID, 1, 0, len);
+	_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_INQUIRE_ID, 1, 0, len);
 
 	switch (powerState)
 	{
@@ -106,7 +108,7 @@ dcdc::updateOutputs()
 	if(powerState == POWER_STATE::POWER_OFF || powerState == POWER_STATE::POWER_ON || powerState == POWER_STATE::POWER_RESET)
 	{
 		txData[0] = powerState;
-		_h7can_device.transmitMessage(0, &txData[0], DCDC_POWER_CMD_ID, 1, 0, len);
+		_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_POWER_CMD_ID, 1, 0, len);
 		powerState = POWER_STATE::WAITE;
 		_param_dcdc_power.set(POWER_STATE::WAITE);
 		_param_dcdc_power.commit();
@@ -115,7 +117,7 @@ dcdc::updateOutputs()
 	if(dcdc_addr != _param_dcdc_addr.get())
 	{
 		txData[0] = _param_dcdc_addr.get();
-		_h7can_device.transmitMessage(0, &txData[0], DCDC_SET_ID, 1, 0, len);
+		_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_SET_ID, 1, 0, len);
 
 		dcdc_addr = txData[0];
 		DCDC_POWER_CMD_ID = ((DCDC_POWER_CMD_ID & ~ADDR_MASK) | (static_cast<uint32_t>(dcdc_addr)<<16));

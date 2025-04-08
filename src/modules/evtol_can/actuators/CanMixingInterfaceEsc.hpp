@@ -32,7 +32,7 @@ private:
 
 	MixingOutput _mixing_output{"CAN_EC", canesc::MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
 
-	uORB::PublicationMulti<actuator_outputs_s> _actuator_outputs_can_pub{ORB_ID(actuator_outputs_can)};
+	uORB::PublicationMulti<actuator_outputs_s> _actuator_outputs_esc_pub{ORB_ID(actuator_outputs_can_esc)};
 
 	// Parameters
 	// DEFINE_PARAMETERS(
@@ -55,7 +55,7 @@ bool CanMixingInterfaceEsc::updateOutputs(bool stop_motors, uint16_t outputs[MAX
 		}
 
 		actuator_outputs.timestamp = hrt_absolute_time();
-		_actuator_outputs_can_pub.publish(actuator_outputs);
+		_actuator_outputs_esc_pub.publish(actuator_outputs);
 		return true;
 	}
 	return false;

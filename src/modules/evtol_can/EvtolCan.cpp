@@ -69,7 +69,7 @@ void EvtolCan::AssignGlobalBufferForID(uint8_T CANModule, uint32_T id, uint8_T i
  *
  * @return 接收成功返回0，失败返回4
  */
-uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length)
+uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T* CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length)
 {
 	/* idType 0: std, 1: extended*/
 	int rxStatus = 0;
@@ -80,11 +80,11 @@ uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint
 	uint32_T 	rx_id=0;
 	uint8_T 	rx_length=0;
 	uint8_T 	rx_remote=0;
-	/* Read all CAN messages available, till CAN read errors*/
+	/* Read all CAN 0 messages available, till CAN read errors*/
 	while(rxStatus>=0)
 	{
-		rxStatus = _h7can_device.receiveMessage(CANModule, &rx_data[0], &rx_id, &rx_idType, &rx_remote, &rx_length);// call read fn here read(canHandleMap[CANModule], &rxmsg, sizeof(rxmsg));
-		if (rxStatus ==4)
+		rxStatus = _h7can_device.receiveMessage(0, &rx_data[0], &rx_id, &rx_idType, &rx_remote, &rx_length);// call read fn here read(canHandleMap[CANModule], &rxmsg, sizeof(rxmsg));
+		if (rxStatus == 4)
 		{
 			rxStatus= -1; /*CAN Receive failure*/
 		}else {
@@ -92,11 +92,37 @@ uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint
 			/* Store in global buffer for Raw Data Type CAN Receive block */
 			for(msgIdx=0;msgIdx<MW_NUM_CAN_RECEIVE_RAW;msgIdx++)
 			{
-				if( (globalCANRxBuffer[msgIdx].Valid==0) && (globalCANRxBuffer[msgIdx].ID == rx_id) && (globalCANRxBuffer[msgIdx].IDType == rx_idType) && (globalCANRxBuffer[msgIdx].CANModule == CANModule))
-				{
+				if( (globalCANRxBuffer[msgIdx].Valid==0) && (globalCANRxBuffer[msgIdx].ID == rx_id) && (globalCANRxBuffer[msgIdx].IDType == rx_idType))
+				{//从CAN0收到期望的消息
 					globalCANRxBuffer[msgIdx].Length = rx_length;
 					globalCANRxBuffer[msgIdx].Remote = rx_remote;
 					globalCANRxBuffer[msgIdx].Valid = 1;
+					globalCANRxBuffer[msgIdx].CANModule = 0;
+					memcpy(&globalCANRxBuffer[msgIdx].Data[0], &rx_data[0], rx_length);
+					break;
+				}
+			}
+		}
+	}
+	rxStatus = 0;
+	/* Read all CAN 1 messages available, till CAN read errors*/
+	while(rxStatus>=0)
+	{
+		rxStatus = _h7can_device.receiveMessage(1, &rx_data[0], &rx_id, &rx_idType, &rx_remote, &rx_length);// call read fn here read(canHandleMap[CANModule], &rxmsg, sizeof(rxmsg));
+		if (rxStatus == 4)
+		{
+			rxStatus= -1; /*CAN Receive failure*/
+		}else {
+			/* Update Global Receive Buffer if CAN Receive is successfull*/
+			/* Store in global buffer for Raw Data Type CAN Receive block */
+			for(msgIdx=0;msgIdx<MW_NUM_CAN_RECEIVE_RAW;msgIdx++)
+			{
+				if( (globalCANRxBuffer[msgIdx].Valid==0) && (globalCANRxBuffer[msgIdx].ID == rx_id) && (globalCANRxBuffer[msgIdx].IDType == rx_idType))
+				{//从CAN1收到期望的消息
+					globalCANRxBuffer[msgIdx].Length = rx_length;
+					globalCANRxBuffer[msgIdx].Remote = rx_remote;
+					globalCANRxBuffer[msgIdx].Valid = 1;
+					globalCANRxBuffer[msgIdx].CANModule = 1;
 					memcpy(&globalCANRxBuffer[msgIdx].Data[0], &rx_data[0], rx_length);
 					break;
 				}
@@ -107,7 +133,7 @@ uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint
 	/* Read from Buffer */
 	for(msgIdx = 0; msgIdx < MW_NUM_CAN_RECEIVE_RAW; msgIdx++)
 	{
-		if((id == globalCANRxBuffer[msgIdx].ID) && (idType == globalCANRxBuffer[msgIdx].IDType) && (CANModule == globalCANRxBuffer[msgIdx].CANModule) && (globalCANRxBuffer[msgIdx].Valid ==1 ))
+		if((id == globalCANRxBuffer[msgIdx].ID) && (idType == globalCANRxBuffer[msgIdx].IDType) && (globalCANRxBuffer[msgIdx].Valid ==1 ))
 		{
 			for(idx = 0; idx < 8 ;idx++)
 			{
@@ -117,6 +143,7 @@ uint8_t EvtolCan::ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint
 			globalCANRxBuffer[msgIdx].Valid = 0;
 			*length = globalCANRxBuffer[msgIdx].Length;
 			*remote = globalCANRxBuffer[msgIdx].Remote;
+			*CANModule = globalCANRxBuffer[msgIdx].CANModule;
 			rxStatus = 0; /* Read Sucess */
 			break;
 		}
@@ -151,14 +178,14 @@ bool EvtolCan::init()
 				AssignGlobalBufferForID(br->get_can_module(), br->get_msg_id()[i], 1);
 			}
 		}else{
-			mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer %u is too low", MW_NUM_CAN_RECEIVE_RAW);
+			mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer %u(need %u) is too low", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum);
 		}
 
 		if (ret < 0) {
 			PX4_ERR("cannot init sensor bridge '%s' (%d)", br->get_name(), ret);
 			return ret;
 		}
-		PX4_DEBUG("sensor bridge '%s' init ok", br->get_name());
+		PX4_INFO("sensor bridge '%s' init ok", br->get_name());
 	}
 
 
@@ -170,6 +197,13 @@ bool EvtolCan::init()
 void EvtolCan::print_info()
 {
 	(void)pthread_mutex_lock(&_node_mutex);
+
+	// Sensor bridges
+	for (const auto &br : _can_sensor_bridges) {
+		printf("Sensor '%s':\n", br->get_name());
+		br->print_status();
+		printf("\n");
+	}
 
 	perf_print_counter(_cycle_perf);
 	perf_print_counter(_interval_perf);
@@ -185,6 +219,7 @@ void EvtolCan::Run()
 	uint8_t rxData[8] = {0,};
 	uint8_t remote;
 	uint8_t Length;
+	uint8_t can_module;
 	uint32_t _msg_id = 0;
 
 	// Check if parameters have changed
@@ -216,9 +251,9 @@ void EvtolCan::Run()
 			for(size_t i = 0; i<br_msg_id_num; i++)
 			{
 				_msg_id = br->get_msg_id()[i];
-				if(!ReceiveMessages_By_ID(br->get_can_module(), &rxData[0], _msg_id, 1, &remote, &Length))
+				if(!ReceiveMessages_By_ID(&can_module, &rxData[0], _msg_id, 1, &remote, &Length))
 				{
-					br->msg_cb(_msg_id, &rxData[0], Length);
+					br->msg_cb(can_module, _msg_id, &rxData[0], Length);
 				}
 			}
 		}

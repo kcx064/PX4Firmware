@@ -58,6 +58,7 @@ px4_add_module(
 		sensors/CanSensorBridge.hpp
 		sensors/esc_status.hpp
 		sensors/dcdc_status.hpp
+		sensors/servo_status.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include

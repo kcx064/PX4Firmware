@@ -68,7 +68,7 @@ private:
 	void Run() override;
 	void AssignGlobalBufferForID(uint8_T CANModule, uint32_T id, uint8_T idType);
 
-	uint8_t ReceiveMessages_By_ID(uint8_T CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length);
+	uint8_t ReceiveMessages_By_ID(uint8_T* CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length);
 
 	MW_H7CAN_DEVICE 		&_h7can_device;
 	canesc				_canesc;

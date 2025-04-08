@@ -113,14 +113,13 @@ class esc_status : public CanSensorBridgeBase
 public:
 	static const char *const NAME;
 
-	esc_status(uint8_t CANModule):
-		_CANModule(CANModule){};
+	esc_status(){};
 
 	const char *get_name() const override { return NAME; }
 
 	int init() override;
 
-	void msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len) override;
+	void msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len) override;
 
 	uint8_t check_escs_status();
 
@@ -140,7 +139,7 @@ public:
 	{
 		return _CANModule;
 	}
-	uint8_t _CANModule{0};
+
 	static constexpr uint32_t msg_id_list[] ={
 		Esc0Status1,
 		Esc0Status2,
@@ -179,8 +178,11 @@ int esc_status::init()
 	return 0;
 }
 
-void esc_status::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
+void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
+	// perf_count(_count_perf);
+	perf_count_interval(_count_perf, 1_s);
+	_CANModule = canModule;
 	SinemotionESC::status_u status;
 	//根据msg_id,将rxData存入相应联合体中
 	memcpy(&status.bytes, rxData, 8);

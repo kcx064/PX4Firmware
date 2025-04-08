@@ -49,6 +49,8 @@ private:
 	uint64_t 			sinemotion_esc_throttle_signature{0x1437AC612DC2C691};
 	throttle_pwm 			sinemotion_esc;
 
+	uint8_t 			_CANModule{0};
+
 
 	uORB::PublicationMulti<debug_value_s> _debug_pub{ORB_ID(debug_value)};
 
@@ -72,7 +74,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	uint8_t len = 0;
 	while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
 	{
-		_h7can_device.transmitMessage(0, &esc_msg_data[0], BROADCAST_THROTTLE_2_ID, 1, 0, len);
+		_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], BROADCAST_THROTTLE_2_ID, 1, 0, len);
 	}
 	sinemotion_esc.clear_esc_cmds();
 }
