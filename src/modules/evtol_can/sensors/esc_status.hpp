@@ -180,8 +180,7 @@ int esc_status::init()
 
 void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
-	// perf_count(_count_perf);
-	perf_count_interval(_count_perf, 1_s);
+	perf_count(_count_perf);
 	_CANModule = canModule;
 	SinemotionESC::status_u status;
 	//根据msg_id,将rxData存入相应联合体中

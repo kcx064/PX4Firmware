@@ -98,8 +98,7 @@ int servo_status::init()
 
 void servo_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
-	// perf_count(_count_perf);
-	perf_count_interval(_count_perf, 1_s);
+	perf_count(_count_perf);
 	_CANModule = canModule;
 
 	uint8_t servo_index = 0;

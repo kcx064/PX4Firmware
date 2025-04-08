@@ -177,6 +177,7 @@ bool EvtolCan::init()
 			{
 				AssignGlobalBufferForID(br->get_can_module(), br->get_msg_id()[i], 1);
 			}
+			PX4_INFO("CAN receive buffer %u(need %u)", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum);
 		}else{
 			mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer %u(need %u) is too low", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum);
 		}
@@ -252,6 +253,10 @@ void EvtolCan::Run()
 	}
 
 	pthread_mutex_lock(&_node_mutex);
+
+	perf_begin(_cycle_perf);
+	perf_count(_interval_perf);
+
 	for (auto &br : _can_sensor_bridges) {
 
 		//检测当前br所需要的消息是否更新
@@ -269,14 +274,12 @@ void EvtolCan::Run()
 				}
 			}
 		}
-		// else{
-		// 	mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer is too low, excessive messages will not be received");
-		// }
 	}
+
+	perf_end(_cycle_perf);
 	pthread_mutex_unlock(&_node_mutex);
 
-	perf_begin(_cycle_perf);
-	perf_count(_interval_perf);
+
 }
 
 int EvtolCan::start()

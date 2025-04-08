@@ -68,13 +68,22 @@ void CanMixingInterfaceServo::mixerChanged()
 
 void CanMixingInterfaceServo::Run()
 {
+
+
 	pthread_mutex_lock(&_node_mutex);
-	_mixing_output.update();
-	_mixing_output.updateSubscriptions(false);
-	pthread_mutex_unlock(&_node_mutex);
 
 	perf_begin(_cycle_perf);
 	perf_count(_interval_perf);
+
+	_mixing_output.update();
+	_mixing_output.updateSubscriptions(false);
+
+	perf_end(_cycle_perf);
+
+	pthread_mutex_unlock(&_node_mutex);
+
+
+
 }
 
 void CanMixingInterfaceServo::print_status()

@@ -3,6 +3,7 @@
 #include "esc_status.hpp"
 #include "dcdc_status.hpp"
 #include "servo_status.hpp"
+#include "bms_status.hpp"
 
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
@@ -22,6 +23,12 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 	param_get(param_find("SUB_HMARK_SERVO"), &can_sub_servo);
 	if(can_sub_servo != 0){
 		list.add(new servo_status());
+	}
+
+	int32_t can_sub_bms = 1;
+	param_get(param_find("SUB_FM_BATT"), &can_sub_bms);
+	if(can_sub_bms != 0){
+		list.add(new bms_status());
 	}
 
 

@@ -30,12 +30,19 @@ private:
 
 inline void CanDeviceInterface::Run()
 {
+
+
 	pthread_mutex_lock(&_node_mutex);
-	updateOutputs();
-	pthread_mutex_unlock(&_node_mutex);
 
 	perf_begin(_cycle_perf);
 	perf_count(_interval_perf);
+
+	updateOutputs();
+
+	perf_end(_cycle_perf);
+
+	pthread_mutex_unlock(&_node_mutex);
+
 }
 
 void CanDeviceInterface::print_status()

@@ -42,9 +42,7 @@ public:
 class CanSensorBridgeBase : public ICanSensorBridge
 {
 protected:
-	CanSensorBridgeBase(){
-		perf_begin(_count_perf);
-	};
+	CanSensorBridgeBase(){};
 public:
 	uint8_t _CANModule{0};
 	~CanSensorBridgeBase(){

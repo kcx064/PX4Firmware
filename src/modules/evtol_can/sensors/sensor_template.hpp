@@ -47,5 +47,6 @@ int sensor_template::init()
 
 void sensor_template::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
-
+	perf_count(_count_perf);
+	_CANModule = canModule;
 }
