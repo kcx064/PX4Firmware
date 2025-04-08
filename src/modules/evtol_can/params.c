@@ -50,28 +50,6 @@ PARAM_DEFINE_INT32(DB_SERVO_BIAS, 0);
 PARAM_DEFINE_INT32(DB_CAN_RATE, 1000000);
 
 /**
- * DB BMS EN
- *
- * @min 0
- * @max 1
- * @group DB
- * @value 0 Disable
- * @value 1 Enable
- */
-PARAM_DEFINE_INT32(DB_BMS_EN, 0);
-
-/**
- * DB RC Select
- *
- * @min 0
- * @max 1
- * @group DB
- * @value 0 RC_MAIN
- * @value 1 RC_AUX
- */
-PARAM_DEFINE_INT32(DB_RC_SEL, 0);
-
-/**
  * DB Servo Check
  *
  * @min 0
@@ -143,7 +121,7 @@ PARAM_DEFINE_INT32(DCDC_POW, 0);
 PARAM_DEFINE_INT32(DCDC_ADDR, 1);
 
 /**
- * DCDC Subscribe
+ * DC Converter Subscribe
  *
  * @min 0
  * @max 1

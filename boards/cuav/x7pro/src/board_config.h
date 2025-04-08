@@ -129,13 +129,19 @@
 
 #define GPIO_VDD_5V_HIPOWER_OC          /* PJ3 */  (GPIO_INPUT|GPIO_FLOAT|GPIO_PORTJ|GPIO_PIN3)
 #define GPIO_nVDD_5V_PERIPH_OC          /* PJ4 */  (GPIO_INPUT|GPIO_FLOAT|GPIO_PORTJ|GPIO_PIN4)
+//kechenxu add
+#define DB_HIPOWER_EN  			/* PD11 */ (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN11)
+#define DB_RC_EN  			/* PG5  */ (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTG|GPIO_PIN5)
 
 /* Power switch controls ******************************************************/
 #define VDD_5V_PERIPH_EN(on_true)          px4_arch_gpiowrite(GPIO_nVDD_5V_PERIPH_EN, !(on_true))
 #define VDD_5V_HIPOWER_EN(on_true)         px4_arch_gpiowrite(GPIO_VDD_5V_HIPOWER_EN, (on_true))
 #define VDD_3V3_SD_CARD_EN(on_true)        px4_arch_gpiowrite(GPIO_VDD_3V3_SD_CARD_EN, (on_true))
 
-#define SPEKTRUM_POWER(on_true)            px4_arch_gpiowrite(GPIO_VDD_5V_RC_EN, (on_true))
+//kechenxu add
+#define BMS_POWER_EN(on_true)              px4_arch_gpiowrite(DB_HIPOWER_EN, (on_true))
+#define RC_SEL(on_true)                    px4_arch_gpiowrite(DB_RC_EN, (on_true))
+// #define SPEKTRUM_POWER(on_true)            px4_arch_gpiowrite(GPIO_VDD_5V_RC_EN, (on_true))//kechenxu comment
 #define READ_SPEKTRUM_POWER()              px4_arch_gpioread(GPIO_VDD_5V_RC_EN)
 
 /* Tone alarm output */

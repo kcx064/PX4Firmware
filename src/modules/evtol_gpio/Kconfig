@@ -1,0 +1,5 @@
+menuconfig MODULES_EVTOL_GPIO
+	bool "evtol_gpio"
+	default n
+	---help---
+		Enable support for evtol_gpio

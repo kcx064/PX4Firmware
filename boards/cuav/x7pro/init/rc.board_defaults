@@ -16,5 +16,5 @@ param set-default SENS_TEMP_ID 6946850
 
 rgbled_pwm start
 safety_button start
-# work_item_example start
+evtol_gpio start
 evtol_can start
