@@ -198,6 +198,18 @@ void EvtolCan::print_info()
 {
 	(void)pthread_mutex_lock(&_node_mutex);
 
+	printf("Evtol can esc status:\n");
+	_can_interface_esc.print_status();
+	printf("\n");
+
+	printf("Evtol can servo status:\n");
+	_can_interface_servo.print_status();
+	printf("\n");
+
+	printf("Evtol can dc converter status:\n");
+	_dcdc.print_status();
+	printf("\n");
+
 	// Sensor bridges
 	for (const auto &br : _can_sensor_bridges) {
 		printf("Sensor '%s':\n", br->get_name());

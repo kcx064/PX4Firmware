@@ -13,11 +13,17 @@ public:
   	  	_node_mutex(node_mutex),
 		_can_servo_controller(can_servo_controller)
 		{}
+	~CanMixingInterfaceServo() {
+		perf_free(_cycle_perf);
+		perf_free(_interval_perf);
+	};
 
 	bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 		unsigned num_outputs, unsigned num_control_groups_updated) override;
 
 	void mixerChanged() override;
+
+	void print_status();
 
 	static constexpr unsigned MAX_RATE_HZ = 400;
 private:
@@ -29,6 +35,9 @@ private:
 	MixingOutput _mixing_output{"CAN_SV", canservo::MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
 
 	uORB::PublicationMulti<actuator_outputs_s> _actuator_outputs_servo_pub{ORB_ID(actuator_outputs_can_servo)};
+
+	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};
+	perf_counter_t	_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": cycle interval")};
 };
 
 bool CanMixingInterfaceServo::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
@@ -63,4 +72,13 @@ void CanMixingInterfaceServo::Run()
 	_mixing_output.update();
 	_mixing_output.updateSubscriptions(false);
 	pthread_mutex_unlock(&_node_mutex);
+
+	perf_begin(_cycle_perf);
+	perf_count(_interval_perf);
+}
+
+void CanMixingInterfaceServo::print_status()
+{
+	perf_print_counter(_cycle_perf);
+	perf_print_counter(_interval_perf);
 }

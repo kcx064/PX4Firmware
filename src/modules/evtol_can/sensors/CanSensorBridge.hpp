@@ -57,13 +57,6 @@ public:
 	{
 		printf("channel: %d(can port: %d)\n", _CANModule, (_CANModule+1));
 		perf_print_counter(_count_perf);
-
-		// for (unsigned i = 0; i < _max_channels; i++) {
-		// 	if (_channels[i].node_id >= 0) {
-		// 		printf("channel %d: node id %d --> instance %d\n",
-		// 		i, _channels[i].node_id, _channels[i].instance);
-		// 	}
-		// }
 	}
 };
 

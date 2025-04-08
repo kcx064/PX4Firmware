@@ -17,10 +17,17 @@ public:
 			_mixing_output.setMaxNumOutputs(can_esc_controller._rotor_num);
 		}
 
+	~CanMixingInterfaceEsc() {
+		perf_free(_cycle_perf);
+		perf_free(_interval_perf);
+	};
+
 	bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 		unsigned num_outputs, unsigned num_control_groups_updated) override;
 
 	void mixerChanged() override;
+
+	void print_status();
 
 	static constexpr unsigned MAX_RATE_HZ = 400;
 
@@ -38,6 +45,8 @@ private:
 	// DEFINE_PARAMETERS(
 	// 	(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count // decided by the current airframe file
 	// )//最后一行没有逗号
+	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};
+	perf_counter_t	_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": cycle interval")};
 };
 
 bool CanMixingInterfaceEsc::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsigned num_outputs,
@@ -72,4 +81,13 @@ void CanMixingInterfaceEsc::Run()
 	_mixing_output.update();
 	_mixing_output.updateSubscriptions(false);
 	pthread_mutex_unlock(&_node_mutex);
+
+	perf_begin(_cycle_perf);
+	perf_count(_interval_perf);
+}
+
+void CanMixingInterfaceEsc::print_status()
+{
+	perf_print_counter(_cycle_perf);
+	perf_print_counter(_interval_perf);
 }
