@@ -1,6 +1,9 @@
 module_name: CAN
 actuator_output:
   show_subgroups_if: 'UAVCAN_ENABLE=0'
+  config_parameters:
+    - param: 'CAN_BITRATE'
+      label: 'Bitrate'
   output_groups:
     - param_prefix: CAN_EC
       group_label: 'ESCs'

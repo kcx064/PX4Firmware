@@ -41,13 +41,15 @@ PARAM_DEFINE_INT32(DB_SERVO_BIAS, 0);
  * @min 250000
  * @max 1000000
  * @group DB
+ * @value 100000 100K
+ * @value 125000 125K
  * @value 250000 250K
  * @value 500000 500K
  * @value 800000 800K
  * @value 1000000 1M
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(DB_CAN_RATE, 1000000);
+PARAM_DEFINE_INT32(CAN_BITRATE, 1000000);
 
 /**
  * DB Servo Check

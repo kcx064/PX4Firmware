@@ -111,7 +111,7 @@ private:
 	// Parameters
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::DB_INTERVAL>) _param_db_interval,
-		(ParamInt<px4::params::DB_CAN_RATE>) _param_db_can_rate,
+		(ParamInt<px4::params::CAN_BITRATE>) _param_db_can_rate,
 		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count
 	)//最后一行没有逗号
 
