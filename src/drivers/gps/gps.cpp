@@ -957,7 +957,7 @@ GPS::run()
 
 			while ((helper_ret = _helper->receive(receive_timeout)) > 0 && !should_exit()) {
 
-				if (helper_ret & 1) {
+				if (helper_ret & 2) {//kechenxu
 					publish();
 
 					last_rate_count++;
