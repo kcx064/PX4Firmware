@@ -1,4 +1,6 @@
 #include "CanSensorBridge.hpp"
+
+#include <battery/battery.h>
 #include <uORB/topics/servoinfo.h>
 #include <uORB/topics/battery_status.h>
 
@@ -13,6 +15,8 @@
 
 #define SERVO4_CAN_REPORT_DATA_TYPE_ID 0x1807E367
 #define SERVO4_CAN_HEARTBEAT_DATA_TYPE_ID 0x18015567
+
+using namespace time_literals;
 
 namespace himark_servo
 {
@@ -32,12 +36,15 @@ namespace himark_servo
 	}servo_decode_t;
 }
 
-class servo_status : public CanSensorBridgeBase
+class servo_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	servo_status(){};
+	servo_status():
+		ModuleParams(nullptr),
+		_battery(static_cast<int>(1), this, 500_ms, battery_status_s::BATTERY_SOURCE_POWER_MODULE)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -78,8 +85,10 @@ public:
 	orb_advert_t _servoinfo_sub[4];
 	servoinfo_s servo_report[4]{};
 
-	uORB::PublicationMulti<battery_status_s> _LV_status_pub{ORB_ID(battery_status)};
-	battery_status_s  _LV_status{};
+	// uORB::PublicationMulti<battery_status_s> _LV_status_pub{ORB_ID(battery_status)};
+	// battery_status_s  _LV_status{};
+
+	Battery _battery;
 };
 
 const char *const servo_status::NAME = "SERVO_STATUS";
@@ -184,44 +193,50 @@ void servo_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, u
 			orb_publish(ORB_ID(servoinfo), _servoinfo_sub[servo_index], &servo_report[servo_index]);
 
 			if(servo_index == 0){
-				_LV_status.timestamp = hrt_absolute_time();
-
-				_LV_status.voltage_v = servo_report[servo_index].voltage*0.01;
-				_LV_status.voltage_filtered_v = servo_report[servo_index].voltage*0.01;
-
-				_LV_status.current_a = -1;
-				_LV_status.current_filtered_a = 0;
-				_LV_status.current_average_a = -1;
-
-				_LV_status.discharged_mah = -1;
-				_LV_status.time_remaining_s = NAN;
-				_LV_status.temperature = NAN;
-				_LV_status.is_powering_off = false;
-
-				_LV_status.scale = 1;
-				_LV_status.cell_count = 6;
+				_battery.setConnected(true);
+				_battery.updateVoltage(servo_report[servo_index].voltage*0.01);
+				_battery.updateCurrent(-1);
+				_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
 
 
-				_LV_status.voltage_cell_v[0] = _LV_status.voltage_v/6;
-				_LV_status.voltage_cell_v[1] = _LV_status.voltage_v/6;
-				_LV_status.voltage_cell_v[2] = _LV_status.voltage_v/6;
-				_LV_status.voltage_cell_v[3] = _LV_status.voltage_v/6;
-				_LV_status.voltage_cell_v[4] = _LV_status.voltage_v/6;
-				_LV_status.voltage_cell_v[5] = _LV_status.voltage_v/6;
+				// _LV_status.timestamp = hrt_absolute_time();
 
-				_LV_status.remaining = (servo_report[servo_index].voltage*0.01 - 22.2)/(25.2-22.2);//4.2*6 - 3.7*6
+				// _LV_status.voltage_v = servo_report[servo_index].voltage*0.01;
+				// _LV_status.voltage_filtered_v = servo_report[servo_index].voltage*0.01;
 
-				_LV_status.id = 3;
+				// _LV_status.current_a = -1;
+				// _LV_status.current_filtered_a = 0;
+				// _LV_status.current_average_a = -1;
 
-				if(_LV_status.voltage_v < 25.2f)_LV_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
-				// if(_LV_status.voltage_v < 23.4f)_LV_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
-				if(_LV_status.voltage_v < 22.8f)_LV_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.8
-				if(_LV_status.voltage_v < 22.2f)_LV_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
-				if(_LV_status.voltage_v < 21.0f)_LV_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
+				// _LV_status.discharged_mah = -1;
+				// _LV_status.time_remaining_s = NAN;
+				// _LV_status.temperature = NAN;
+				// _LV_status.is_powering_off = false;
 
-				_LV_status.connected = true;
+				// _LV_status.scale = 1;
+				// _LV_status.cell_count = 6;
 
-				_LV_status_pub.publish(_LV_status);
+
+				// _LV_status.voltage_cell_v[0] = _LV_status.voltage_v/6;
+				// _LV_status.voltage_cell_v[1] = _LV_status.voltage_v/6;
+				// _LV_status.voltage_cell_v[2] = _LV_status.voltage_v/6;
+				// _LV_status.voltage_cell_v[3] = _LV_status.voltage_v/6;
+				// _LV_status.voltage_cell_v[4] = _LV_status.voltage_v/6;
+				// _LV_status.voltage_cell_v[5] = _LV_status.voltage_v/6;
+
+				// _LV_status.remaining = (servo_report[servo_index].voltage*0.01 - 22.2)/(25.2-22.2);//4.2*6 - 3.7*6
+
+				// _LV_status.id = 3;
+
+				// if(_LV_status.voltage_v < 25.2f)_LV_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.2*6
+				// // if(_LV_status.voltage_v < 23.4f)_LV_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.9
+				// if(_LV_status.voltage_v < 22.8f)_LV_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.8
+				// if(_LV_status.voltage_v < 22.2f)_LV_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.7
+				// if(_LV_status.voltage_v < 21.0f)_LV_status.warning = battery_status_s::BATTERY_WARNING_FAILED;//3.5
+
+				// _LV_status.connected = true;
+
+				// _LV_status_pub.publish(_LV_status);
 			}
 
 		}

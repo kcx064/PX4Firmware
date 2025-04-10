@@ -1,5 +1,6 @@
 #include "CanSensorBridge.hpp"
 
+#include <battery/battery.h>
 #include <uORB/topics/battery_status.h>
 
 /* BMS can */
@@ -100,12 +101,15 @@ namespace fullymaxbms
 #pragma pack(pop)
 }
 
-class bms_status : public CanSensorBridgeBase
+class bms_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	bms_status(){};
+	bms_status():
+		ModuleParams(nullptr),
+		_battery(static_cast<int>(2), this, 500_ms, battery_status_s::BATTERY_SOURCE_POWER_MODULE)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -133,12 +137,14 @@ public:
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 
-	uORB::PublicationMulti<battery_status_s> _bms_status_pub{ORB_ID(battery_status)};
-	battery_status_s  _can_bms_status{};
+	// uORB::PublicationMulti<battery_status_s> _bms_status_pub{ORB_ID(battery_status)};
+	// battery_status_s  _can_bms_status{};
 
 	fullymaxbms::bms_hcu_info_t bms_hcu_info;
 
 	const float BMS_VOLTAGE_SCALE = 0.1f;
+
+	Battery _battery;
 };
 
 const char *const bms_status::NAME = "BMS_STATUS";
@@ -157,41 +163,49 @@ void bms_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 
 	if(msg_id == msg_id_list[0])
 	{
-		_can_bms_status.timestamp = hrt_absolute_time();
-		_can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
-		_can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
+		// _can_bms_status.timestamp = hrt_absolute_time();
+		// _can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
+		// _can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
 
-		_can_bms_status.current_a = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f);//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
-		//厂家设置为放电电流为负值，充电电流为正值，且原始数据带有1000A偏置量。因此原始数据乘以电流转换系数，减去1000偏置量，取负值，即为实际电流值
-		_can_bms_status.current_filtered_a = _can_bms_status.current_a;
-		_can_bms_status.current_average_a = -1;
+		// _can_bms_status.current_a = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f);//BMS_VOLTAGE_SCALE same as CURRENT_SCALE
+		// //厂家设置为放电电流为负值，充电电流为正值，且原始数据带有1000A偏置量。因此原始数据乘以电流转换系数，减去1000偏置量，取负值，即为实际电流值
+		// _can_bms_status.current_filtered_a = _can_bms_status.current_a;
+		// _can_bms_status.current_average_a = -1;
 
-		_can_bms_status.cell_count = 12;
-		_can_bms_status.scale = 1;
-		_can_bms_status.voltage_cell_v[0] = _can_bms_status.voltage_v/12;//max: 53.4 equivalent 12cell * 4.45Vmax
-		_can_bms_status.voltage_cell_v[1] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[2] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[3] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[4] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[5] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[6] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[7] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[8] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[9] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[10] = _can_bms_status.voltage_v/12;
-		_can_bms_status.voltage_cell_v[11] = _can_bms_status.voltage_v/12;
-		_can_bms_status.remaining = (_can_bms_status.voltage_v - 504.0f)/(640.8f - 504.0f);
-		_can_bms_status.id = 4;
-		_can_bms_status.temperature = NAN;
-		_can_bms_status.time_remaining_s = NAN;
-		_can_bms_status.connected = true;
-		//144cells, MAX 4.45V/cell
-		if(_can_bms_status.voltage_v < 640.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.45
-		if(_can_bms_status.voltage_v < 561.6f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.9
-		if(_can_bms_status.voltage_v < 547.2f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.8
-		if(_can_bms_status.voltage_v < 532.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.7
-		if(_can_bms_status.voltage_v < 504.0f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.5
+		// _can_bms_status.cell_count = 12;
+		// _can_bms_status.scale = 1;
+		// _can_bms_status.voltage_cell_v[0] = _can_bms_status.voltage_v/12;//max: 53.4 equivalent 12cell * 4.45Vmax
+		// _can_bms_status.voltage_cell_v[1] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[2] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[3] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[4] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[5] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[6] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[7] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[8] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[9] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[10] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.voltage_cell_v[11] = _can_bms_status.voltage_v/12;
+		// _can_bms_status.remaining = (_can_bms_status.voltage_v - 504.0f)/(640.8f - 504.0f);
+		// _can_bms_status.id = 4;
+		// _can_bms_status.temperature = NAN;
+		// _can_bms_status.time_remaining_s = NAN;
+		// _can_bms_status.connected = true;
+		// //144cells, MAX 4.45V/cell
+		// if(_can_bms_status.voltage_v < 640.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//4.45
+		// if(_can_bms_status.voltage_v < 561.6f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.9
+		// if(_can_bms_status.voltage_v < 547.2f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_NONE;//3.8
+		// if(_can_bms_status.voltage_v < 532.8f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_LOW;//3.7
+		// if(_can_bms_status.voltage_v < 504.0f)_can_bms_status.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;//3.5
 
-		_bms_status_pub.publish(_can_bms_status);
+		// _bms_status_pub.publish(_can_bms_status);
+
+
+		float_t bms_voltage = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
+		float_t bms_current = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f);
+		_battery.setConnected(true);
+		_battery.updateVoltage(bms_voltage);
+		_battery.updateCurrent(bms_current);
+		_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
 	}
 }
