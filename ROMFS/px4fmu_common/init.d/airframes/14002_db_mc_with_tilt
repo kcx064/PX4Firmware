@@ -41,3 +41,25 @@ param set-default CA_SV_TL1_MINA -45
 param set-default CA_SV_TL1_TD 90
 param set-default CA_SV_TL_COUNT 2
 
+# DB param
+# TELEM used GPS2
+param set-default MAV_0_CONFIG 202
+param set-default SER_GPS2_BAUD 57600
+
+# C-RTK 2HP
+param set-default SER_GPS1_BAUD 230400
+
+# NMEA
+param set-default GPS_1_PROTOCOL 6
+
+# battery calibration
+param set-default BAT1_SOURCE 0
+param set-default BAT1_N_CELLS 6
+param set-default BAT1_V_EMPTY 3.6
+param set-default BAT1_V_CHARGED 4.2
+
+param set-default BAT2_SOURCE 0
+param set-default BAT2_N_CELLS 144
+param set-default BAT2_V_EMPTY 3.6
+param set-default BAT2_V_CHARGED 4.2
+
