@@ -57,8 +57,8 @@ PARAM_DEFINE_INT32(CAN_BITRATE, 1000000);
  * @min 0
  * @max 1
  * @group DB
- * @value 0 DISABLE
- * @value 1 ENABLE
+ * @value 0 Disbale
+ * @value 1 Enable
  */
 PARAM_DEFINE_INT32(DB_SRV_CHK, 1);
 

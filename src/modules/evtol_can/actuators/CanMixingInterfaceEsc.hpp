@@ -1,3 +1,5 @@
+#pragma once
+
 #include <lib/mixer_module/mixer_module.hpp>
 #include <uORB/Publication.hpp>
 #include <uORB/PublicationMulti.hpp>
