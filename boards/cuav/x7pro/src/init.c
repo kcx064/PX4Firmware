@@ -76,13 +76,17 @@ __END_DECLS
  ************************************************************************************/
 __EXPORT void board_peripheral_reset(int ms)
 {
+	px4_arch_configgpio(DB_HIPOWER_EN);//kechenxu
+	px4_arch_configgpio(DB_RC_EN);//kechenxu
 	/* set the peripheral rails off */
 	VDD_5V_PERIPH_EN(false);
 	board_control_spi_sensors_power(false, 0xffff);
 
-	bool last = READ_SPEKTRUM_POWER();
+	// bool last = READ_SPEKTRUM_POWER();kechenxu comment
 	/* Keep Spektum on to discharge rail*/
-	SPEKTRUM_POWER(false);
+	// SPEKTRUM_POWER(false);kechenxu comment
+	BMS_POWER_EN(false);
+	RC_SEL(false);
 
 	/* wait for the peripheral rail to reach GND */
 	usleep(ms * 1000);
@@ -91,7 +95,7 @@ __EXPORT void board_peripheral_reset(int ms)
 	/* re-enable power */
 
 	/* switch the peripheral rail back on */
-	SPEKTRUM_POWER(last);
+	// SPEKTRUM_POWER(last);kechenxu comment
 	board_control_spi_sensors_power(true, 0xffff);
 	VDD_5V_PERIPH_EN(true);
 }
@@ -162,11 +166,15 @@ __EXPORT void stm32_boardinitialize(void)
  ****************************************************************************/
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
+	px4_arch_configgpio(DB_HIPOWER_EN);//kechenxu
+	px4_arch_configgpio(DB_RC_EN);//kechenxu
 	/* Power on Interfaces */
 	VDD_5V_PERIPH_EN(true);
 	VDD_5V_HIPOWER_EN(true);
 	board_control_spi_sensors_power(true, 0xffff);
-	SPEKTRUM_POWER(true);
+	// SPEKTRUM_POWER(true);kechenxu comment
+	BMS_POWER_EN(false);//kechenxu
+	RC_SEL(false);//kechenxu
 
 	/* Need hrt running before using the ADC */
 	px4_platform_init();

@@ -24,4 +24,7 @@ then
 	param set-default UXRCE_DDS_PTCFG 2
 fi
 
+param set-default UAVCAN_ENABLE 0
+
 safety_button start
+evtol_can start

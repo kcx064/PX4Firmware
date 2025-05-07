@@ -1,0 +1,121 @@
+#pragma once
+
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/module.h>
+#include <px4_platform_common/module_params.h>
+#include <px4_platform_common/posix.h>
+#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+
+#include <drivers/drv_hrt.h>
+#include <lib/perf/perf_counter.h>
+#include <lib/systemlib/mavlink_log.h>
+
+// #include <drivers/device/device.h>
+// #include <drivers/drv_pwm_output.h>
+#include <lib/mixer_module/mixer_module.hpp>
+// #include <px4_platform_common/px4_config.h>
+// #include <px4_platform_common/tasks.h>
+// #include <px4_platform_common/time.h>
+
+#include "can_driver/MW_PX4_CAN_DEVICE.h"
+#include "actuators/dcdc.hpp"
+#include "actuators/canesc.hpp"
+#include "actuators/canservo.hpp"
+#include "actuators/CanMixingInterfaceEsc.hpp"
+#include "actuators/CanMixingInterfaceServo.hpp"
+#include "sensors/CanSensorBridge.hpp"
+
+#include <uORB/Publication.hpp>
+#include <uORB/PublicationMulti.hpp>
+#include <uORB/Subscription.hpp>
+#include <uORB/SubscriptionCallback.hpp>
+#include <uORB/topics/parameter_update.h>
+// #include <uORB/topics/sensor_accel.h>
+#include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/mixer_outputs.h>
+#include <uORB/topics/input_rc.h>
+#include <uORB/topics/can_actuator_test.h> //only for actuator debug when disarmed
+#include <uORB/topics/servoinfo.h>
+#include <uORB/topics/can_esc_report.h>
+#include <uORB/topics/can_esc_ret.h>
+#include <uORB/topics/can_servo_ret.h>
+#include <uORB/topics/battery_status.h>
+#include <uORB/topics/esc_status.h>
+#include <uORB/topics/distance_sensor.h>
+// #include <uORB/topics/actuator_controls.h>
+#include <uORB/topics/manual_control_switches.h>
+#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/db_value.h>
+
+using namespace time_literals;
+
+class EvtolCan : public ModuleParams, public px4::ScheduledWorkItem
+{
+public:
+	EvtolCan(MW_H7CAN_DEVICE& h7can_device);
+	~EvtolCan();
+
+	static int start();
+
+	void print_info();
+
+	bool init();
+
+	static EvtolCan	*instance() { return _instance; }
+
+
+private:
+	void Run() override;
+	void AssignGlobalBufferForID(uint8_T CANModule, uint32_T id, uint8_T idType);
+
+	uint8_t ReceiveMessages_By_ID(uint8_T* CANModule, uint8_T* rxData, uint32_T id, uint8_T idType, uint8_T *remote, uint8_T *length);
+
+	MW_H7CAN_DEVICE 		&_h7can_device;
+	canesc				_canesc;
+	canservo			_canservo;
+
+
+	//mavlink log on GCS(QGC)
+	orb_advert_t 			_mavlink_log_pub{nullptr};
+	bool                    	_node_init{false};
+
+
+	pthread_mutex_t			_node_mutex;
+	CanMixingInterfaceEsc 		_can_interface_esc{_node_mutex, _canesc};
+	CanMixingInterfaceServo		_can_interface_servo{_node_mutex, _canservo};
+
+	dcdc				_dcdc;
+
+
+	static EvtolCan			*_instance;			///< singleton pointer
+
+	List<ICanSensorBridge *>	_can_sensor_bridges;		///< List of active sensor bridges
+
+	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
+
+	typedef struct
+	{
+		uint32_T 	ID;
+		uint8_T		Data[8] ={0};
+		uint8_T 	CANModule;
+		uint8_T 	IDType;
+		uint8_T 	Length;
+		uint8_T 	Remote;
+		uint8_T 	Valid;
+
+	}CANMsgType;
+	// volatile
+	CANMsgType globalCANRxBuffer[MW_NUM_CAN_RECEIVE_RAW];
+	uint8_t canRxIdAssigner = 0;
+
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::CANRVE_INTERVAL>) _param_db_interval,
+		(ParamInt<px4::params::CAN_BITRATE>) _param_db_can_rate,
+		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count
+	)//最后一行没有逗号
+
+	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};
+	perf_counter_t	_interval_perf{perf_alloc(PC_INTERVAL, MODULE_NAME": cycle interval")};
+
+};

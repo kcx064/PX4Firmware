@@ -1,0 +1,5 @@
+menuconfig MODULES_EVTOL_CAN
+	bool "evtol_can"
+	default n
+	---help---
+		Enable support for evtol_can
