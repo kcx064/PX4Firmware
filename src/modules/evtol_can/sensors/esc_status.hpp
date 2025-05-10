@@ -1,5 +1,7 @@
 #include "CanSensorBridge.hpp"
 
+// #include <stdio.h>
+#include <px4_platform_common/module_params.h>
 #include <lib/perf/perf_counter.h>
 #include <lib/systemlib/mavlink_log.h>
 
@@ -7,7 +9,9 @@
 #include <uORB/PublicationMulti.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
-#include "uORB/topics/esc_status.h"
+#include <uORB/topics/esc_status.h>
+#include <uORB/topics/can_esc_status.h>
+#include <uORB/topics/parameter_update.h>
 
 using namespace time_literals;
 
@@ -108,12 +112,14 @@ constexpr uint32_t Esc7Status2 = SinemotionESC::EscStatusIds<7>::Status2;
 constexpr uint32_t Esc7Status3 = SinemotionESC::EscStatusIds<7>::Status3;
 
 
-class esc_status : public CanSensorBridgeBase
+class esc_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	esc_status(){};
+	esc_status():
+		ModuleParams(nullptr)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -123,8 +129,12 @@ public:
 
 	uint8_t check_escs_status();
 
-	esc_status_s	_esc_status{};
-	uORB::PublicationMulti<esc_status_s> _esc_status_pub{ORB_ID(esc_status)};
+	esc_status_s					_esc_status{};
+	uORB::PublicationMulti<esc_status_s> 		_esc_status_pub{ORB_ID(esc_status)};
+
+	can_esc_status_s				_can_esc_status{};
+	uORB::PublicationMulti<can_esc_status_s> 	_can_esc_status_pub{ORB_ID(can_esc_status)};
+
 	const uint32_t *get_msg_id() override
 	{
 		return msg_id_list;
@@ -167,6 +177,13 @@ public:
 		Esc7Status3,
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
+private:
+	uint8_t rotor_num{esc_status_s::CONNECTED_ESC_MAX};
+	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count
+	)//最后一行没有逗号
 };
 
 const char *const esc_status::NAME = "ESC_STATUS";
@@ -195,33 +212,43 @@ void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 	uint8_t _rotor_count = esc_status_s::CONNECTED_ESC_MAX;
 
 	auto &ref = _esc_status.esc[esc_index];
+	auto &can_ref = _can_esc_status.can_esc[esc_index];
 
 	if (esc_index < esc_status_s::CONNECTED_ESC_MAX)
 	{
 		ref.timestamp = hrt_absolute_time();
+		can_ref.timestamp = hrt_absolute_time();
 		ref.esc_errorcount  = 0;
 		if(uavcan_msg_id == SinemotionESC::SinemotionStatus1)
 		{
-			// status.status1.comm_pwm;
-			// status.status1.recv_pwm;
 			ref.esc_rpm = status.status1.speed;
+
+			can_ref.rpm = status.status1.speed;
+			can_ref.comm_pwm = status.status1.comm_pwm;
+			can_ref.recv_pwm = status.status1.recv_pwm;
 		}
 
 		if(uavcan_msg_id == SinemotionESC::SinemotionStatus2)
 		{
-			ref.esc_voltage = status.status2.voltge;
-			ref.esc_current = status.status2.current;
-			// status.status2.bus_current;
-			// status.status2.v_modulation;
+			ref.esc_voltage = static_cast<float_t>(status.status2.voltge)*0.1f;
+			ref.esc_current = static_cast<float_t>(status.status2.current)*0.1f;
+
+			can_ref.voltage_in = static_cast<float_t>(status.status2.voltge)*0.1f;
+			can_ref.current_in = static_cast<float_t>(status.status2.bus_current)*0.1f; //母线电流
+			can_ref.current_out = static_cast<float_t>(status.status2.current)*0.1f;    //项电流
+			can_ref.v_modulation = status.status2.v_modulation; 			    //调制比
 		}
 		if(uavcan_msg_id == SinemotionESC::SinemotionStatus3)
 		{
 			ref.esc_address = status.status3.esc_index;
-			ref.esc_temperature = status.status3.mos_temp;
-			// status.status3.cap_temp;
-			// status.status3.mcu_temp;
-			// status.status3.motor_temp;
-			// status.status3.running_error;
+			ref.esc_temperature = static_cast<int16_t>(status.status3.mos_temp) - 50;
+
+			can_ref.esc_index = status.status3.esc_index; //电机编号
+			can_ref.t_mos = static_cast<int16_t>(status.status3.mos_temp) - 50;
+			can_ref.t_cap = static_cast<int16_t>(status.status3.cap_temp) - 50;
+			can_ref.t_mcu = static_cast<int16_t>(status.status3.mcu_temp) - 50;
+			can_ref.t_motor = static_cast<int16_t>(status.status3.motor_temp) - 50;
+			can_ref.status_flags = status.status3.running_error;
 		}
 	}
 
@@ -233,6 +260,13 @@ void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 	_esc_status.timestamp = hrt_absolute_time();
 	_esc_status_pub.publish(_esc_status);
 
+	_can_esc_status.esc_count = _rotor_count;
+	_can_esc_status.counter += 1;
+	// _can_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
+	_can_esc_status.esc_online_flags = check_escs_status();
+	_can_esc_status.esc_armed_flags = (1 << _rotor_count) - 1;
+	_can_esc_status.timestamp = hrt_absolute_time();
+	_can_esc_status_pub.publish(_can_esc_status);
 
 }
 
@@ -243,7 +277,7 @@ uint8_t esc_status::check_escs_status()
 
 	for (int index = 0; index < esc_status_s::CONNECTED_ESC_MAX; index++) {
 
-		if (_esc_status.esc[index].timestamp > 0 && now - _esc_status.esc[index].timestamp < 1200_ms) {
+		if (_can_esc_status.can_esc[index].timestamp > 0 && now - _can_esc_status.can_esc[index].timestamp < 1200_ms) {
 			esc_status_flags |= (1 << index);
 		}
 

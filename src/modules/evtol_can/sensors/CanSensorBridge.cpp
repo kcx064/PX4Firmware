@@ -9,7 +9,7 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
 	int32_t can_sub_esc = 1;
 	param_get(param_find("SUB_SM_ESC"), &can_sub_esc);
-	if(can_sub_esc!=0){
+	if(can_sub_esc != 0){
 		list.add(new esc_status());
 	}
 

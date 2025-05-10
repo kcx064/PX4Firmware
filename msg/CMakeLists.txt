@@ -255,6 +255,7 @@ set(msg_files
 	CanActuatorTest.msg
 	CanEscReport.msg
 	CanEscRet.msg
+	CanEscStatus.msg
 	CanServoRet.msg
 	Servoinfo.msg
 	DcdcStatus.msg
