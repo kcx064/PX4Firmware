@@ -20,7 +20,7 @@ extern "C" {
 /* sinemotion esc can */
 #define PRIORITY 0x00u
 #define LOCALNODE_ID 0x01u
-#define DATETYPE_ID 0x4E2B
+#define DATETYPE_ID 0x4E2E
 #define BROADCAST_THROTTLE_2_ID ((PRIORITY << 24) | (DATETYPE_ID << 8) | LOCALNODE_ID)
 
 using namespace px4;
@@ -105,7 +105,12 @@ public:
 	* Check: 0x29B1
 	*/
 	uint16_t cal_uavcan_crc(){
-		_crc16 = crc16_signature(0xFFFF, _esc_num * CMD_LENGTH, &_signature_and_buffer.buffer[2]);
+		uint8_t data[sizeof(uint64_t) + CMD_LENGTH*8];
+		/* 添加签名数据 */
+		memcpy(data, &_signature_and_buffer.signature, sizeof(uint64_t));
+		/* 添加pwm数据，长度等于 单个电调数据长度*电调数量 */
+		memcpy(&data[sizeof(uint64_t)], &_signature_and_buffer.buffer[2], CMD_LENGTH*_esc_num);
+		_crc16 = crc16_signature(0xFFFF, 8 + _esc_num * CMD_LENGTH, data);
 		return _crc16;
 	}
 
@@ -132,7 +137,7 @@ public:
 			memcpy(&_signature_and_buffer.buffer[CMD_LENGTH*_index + _need_crc*2], pwm_cmd.raw, sizeof(throttle_pwm_data_t));
 			_index++;
 			if(_index==_esc_num){//数据填满则设置开始传输标志
-				start_of_transfer = 1;
+				start_of_transfer = true;
 				remain_data = _need_crc*2 + _esc_num * CMD_LENGTH;
 				// 如果需要CRC，计算并将CRC写入缓冲区的前两个字节中
 				if(_need_crc){
@@ -188,6 +193,7 @@ public:
 		transfered_data += data_to_copy;
 		remain_data -= data_to_copy;
 
+		if (start_of_transfer)transfer_id += 8;
 		buffer[data_to_copy] = static_cast<uint8_t>(
 			(start_of_transfer << 7) |
 			(end_of_transfer << 6) |
@@ -198,7 +204,7 @@ public:
 
 		toggle = !toggle;
 		start_of_transfer = false;
-		transfer_id += 8;
+
 
 		return 0;
 	}
