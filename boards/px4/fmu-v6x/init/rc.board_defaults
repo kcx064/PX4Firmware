@@ -28,3 +28,4 @@ param set-default UAVCAN_ENABLE 0
 
 safety_button start
 evtol_can start
+evtol_gpio start

@@ -76,9 +76,16 @@ void EvtolGpio::Run()
 		parameter_update_s param_update;
 		_parameter_update_sub.copy(&param_update);
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
-
+#ifdef EVTOL_DB
+#pragma message("Code under EVTOL_DB is being compiled.")
 		BMS_POWER_EN(_param_bms_en.get());
 		RC_SEL(_param_rc_sel.get());
+#endif
+#ifdef EVTOL_MIX
+#pragma message("Code under EVTOL_MIX is being compiled.")
+		AUX5_IO(_param_aux5_io.get());
+		AUX6_IO(_param_aux6_io.get());
+#endif
 	}
 
 

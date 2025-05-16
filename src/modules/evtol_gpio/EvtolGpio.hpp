@@ -89,7 +89,9 @@ private:
 		// (ParamInt<px4::params::SYS_AUTOSTART>) _param_sys_autostart,   /**< example parameter */
 		// (ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig  /**< another parameter */
 		(ParamInt<px4::params::BMS_EN>) _param_bms_en,             /**< DB BMS EN */
-		(ParamInt<px4::params::RC_SEL>) _param_rc_sel             /**< DB RC Select */
+		(ParamInt<px4::params::RC_SEL>) _param_rc_sel,             /**< DB RC Select */
+		(ParamInt<px4::params::AUX5_IO>) _param_aux5_io,              /**< DB AUX 5 IO */
+		(ParamInt<px4::params::AUX6_IO>) _param_aux6_io              /**< DB AUX 6 IO */
 	)
 
 };

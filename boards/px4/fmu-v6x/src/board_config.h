@@ -247,8 +247,13 @@
 
 /* PWM
  */
-#define DIRECT_PWM_OUTPUT_CHANNELS   9
+#define DIRECT_PWM_OUTPUT_CHANNELS   7 //kechenxu modified
+#define AUX_OUT_5 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_100MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN13) //kechenxu add
+#define AUX_OUT_6 (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_100MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN14) //kechenxu add
 
+#define AUX5_IO(on_true)              	px4_arch_gpiowrite(AUX_OUT_5, (on_true)) //kechenxu add
+#define AUX6_IO(on_true)		px4_arch_gpiowrite(AUX_OUT_6, (on_true)) //kechenxu add
+#define EVTOL_MIX
 
 /* Power supply control and monitoring GPIOs */
 

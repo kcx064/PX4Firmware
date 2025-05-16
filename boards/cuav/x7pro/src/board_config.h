@@ -140,6 +140,7 @@
 #define VDD_3V3_SD_CARD_EN(on_true)        px4_arch_gpiowrite(GPIO_VDD_3V3_SD_CARD_EN, (on_true))
 
 //kechenxu add
+#define EVTOL_DB
 #define BMS_POWER_EN(on_true)              px4_arch_gpiowrite(DB_HIPOWER_EN, (on_true))
 #define RC_SEL(on_true)                    px4_arch_gpiowrite(DB_RC_EN, (on_true))
 // #define SPEKTRUM_POWER(on_true)            px4_arch_gpiowrite(GPIO_VDD_5V_RC_EN, (on_true)) //commented by kechenxu

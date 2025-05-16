@@ -103,6 +103,10 @@ __END_DECLS
  ************************************************************************************/
 __EXPORT void board_peripheral_reset(int ms)
 {
+	px4_arch_configgpio(AUX_OUT_5);
+	px4_arch_configgpio(AUX_OUT_6);
+	AUX5_IO(false);
+	AUX6_IO(false);
 	/* set the peripheral rails off */
 
 	VDD_5V_PERIPH_EN(false);
@@ -208,6 +212,10 @@ stm32_boardinitialize(void)
 
 __EXPORT int board_app_initialize(uintptr_t arg)
 {
+	px4_arch_configgpio(AUX_OUT_5);
+	px4_arch_configgpio(AUX_OUT_6);
+	AUX5_IO(false);
+	AUX6_IO(false);
 #if !defined(BOOTLOADER)
 
 	/* Power on Interfaces */
