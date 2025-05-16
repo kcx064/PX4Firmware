@@ -137,7 +137,6 @@ void LoggedTopics::add_default_topics()
 	add_topic("vehicle_status");
 	add_optional_topic("vtol_vehicle_status", 200);
 	add_topic("wind", 1000);
-	add_topic("servoinfo",100);
 	add_topic("can_esc_status", 100);
 
 	// multi topics
@@ -149,6 +148,7 @@ void LoggedTopics::add_default_topics()
 	add_optional_topic_multi("rpm", 200);
 	add_topic_multi("timesync_status", 1000, 3);
 	add_optional_topic_multi("telemetry_status", 1000, 4);
+	add_optional_topic_multi("servoinfo", 100, 4);
 
 	// EKF multi topics (currently max 9 estimators)
 #if CONSTRAINED_MEMORY
