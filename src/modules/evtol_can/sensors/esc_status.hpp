@@ -178,7 +178,7 @@ public:
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 private:
-	uint8_t rotor_num{esc_status_s::CONNECTED_ESC_MAX};
+	int32_t rotor_num{esc_status_s::CONNECTED_ESC_MAX};
 	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
 	// Parameters
 	DEFINE_PARAMETERS(
@@ -197,6 +197,18 @@ int esc_status::init()
 
 void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len)
 {
+	// Check if parameters have changed
+	if (_parameter_update_sub.updated()) {
+		// clear update
+		parameter_update_s param_update;
+		_parameter_update_sub.copy(&param_update);
+		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
+
+		//获取旋翼-电调数量
+		rotor_num = _ca_rotor_count.get();
+		PX4_INFO("assume esc number %ld",rotor_num);
+	}
+
 	perf_count(_count_perf);
 	_CANModule = canModule;
 	SinemotionESC::status_u status;
@@ -208,13 +220,10 @@ void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 	//对uint32_t msg_id取最后一个字节作为uint8_t source_node_id
 	uint8_t esc_index = (msg_id & 0xFF) - SinemotionESC::BaseId;
 
-	//TODO 此处有待优化，目前只支持8个ESC, 改为动态适应涵道和混动
-	uint8_t _rotor_count = esc_status_s::CONNECTED_ESC_MAX;
-
 	auto &ref = _esc_status.esc[esc_index];
 	auto &can_ref = _can_esc_status.can_esc[esc_index];
 
-	if (esc_index < esc_status_s::CONNECTED_ESC_MAX)
+	if (esc_index < rotor_num)
 	{
 		ref.timestamp = hrt_absolute_time();
 		can_ref.timestamp = hrt_absolute_time();
@@ -252,19 +261,19 @@ void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 		}
 	}
 
-	_esc_status.esc_count = _rotor_count;
+	_esc_status.esc_count = rotor_num;
 	_esc_status.counter += 1;
 	_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
 	_esc_status.esc_online_flags = check_escs_status();
-	_esc_status.esc_armed_flags = (1 << _rotor_count) - 1;
+	_esc_status.esc_armed_flags = (1 << rotor_num) - 1;
 	_esc_status.timestamp = hrt_absolute_time();
 	_esc_status_pub.publish(_esc_status);
 
-	_can_esc_status.esc_count = _rotor_count;
+	_can_esc_status.esc_count = rotor_num;
 	_can_esc_status.counter += 1;
 	// _can_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
 	_can_esc_status.esc_online_flags = check_escs_status();
-	_can_esc_status.esc_armed_flags = (1 << _rotor_count) - 1;
+	_can_esc_status.esc_armed_flags = (1 << rotor_num) - 1;
 	_can_esc_status.timestamp = hrt_absolute_time();
 	_can_esc_status_pub.publish(_can_esc_status);
 
@@ -275,7 +284,7 @@ uint8_t esc_status::check_escs_status()
 	int esc_status_flags = 0;
 	const hrt_abstime now = hrt_absolute_time();
 
-	for (int index = 0; index < esc_status_s::CONNECTED_ESC_MAX; index++) {
+	for (int index = 0; index < rotor_num; index++) {
 
 		if (_can_esc_status.can_esc[index].timestamp > 0 && now - _can_esc_status.can_esc[index].timestamp < 1200_ms) {
 			esc_status_flags |= (1 << index);
