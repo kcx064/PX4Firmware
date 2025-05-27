@@ -21,23 +21,23 @@ PARAM_DEFINE_INT32(BMS_EN, 0);
 PARAM_DEFINE_INT32(RC_SEL, 0);
 
 /**
- * MIX AUX5_IO
+ * MIX Precharge
  *
  * @min 0
  * @max 1
  * @group DB
- * @value 0 LOW
- * @value 1 HIGH
+ * @value 0 Disable
+ * @value 1 Enable
  */
-PARAM_DEFINE_INT32(AUX5_IO, 0);
+PARAM_DEFINE_INT32(PRECHARGE, 0);
 
 /**
- * MIX AUX6_IO
+ * MIX Shutdown
  *
  * @min 0
  * @max 1
  * @group DB
- * @value 0 LOW
- * @value 1 HIGH
+ * @value 0 Disable
+ * @value 1 Enable
  */
-PARAM_DEFINE_INT32(AUX6_IO, 0);
+PARAM_DEFINE_INT32(SHOTDOWN, 0);

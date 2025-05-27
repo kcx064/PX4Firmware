@@ -240,7 +240,7 @@ void esc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 		if(uavcan_msg_id == SinemotionESC::SinemotionStatus2)
 		{
 			ref.esc_voltage = static_cast<float_t>(status.status2.voltge)*0.1f;
-			ref.esc_current = static_cast<float_t>(status.status2.current)*0.1f;
+			ref.esc_current = static_cast<float_t>(status.status2.bus_current)*0.1f;
 
 			can_ref.voltage_in = static_cast<float_t>(status.status2.voltge)*0.1f;
 			can_ref.current_in = static_cast<float_t>(status.status2.bus_current)*0.1f; //母线电流

@@ -81,13 +81,56 @@ void EvtolGpio::Run()
 		BMS_POWER_EN(_param_bms_en.get());
 		RC_SEL(_param_rc_sel.get());
 #endif
+
 #ifdef EVTOL_MIX
 #pragma message("Code under EVTOL_MIX is being compiled.")
-		AUX5_IO(_param_aux5_io.get());
-		AUX6_IO(_param_aux6_io.get());
+		start_precharge = _param_precharge.get();
+		shutdown = _param_shutdown.get();
 #endif
 	}
 
+/* state mechaine */
+#ifdef EVTOL_MIX
+	switch (_precharge_state)
+	{
+	case precharge_state::waitaction:
+		if(start_precharge){
+			AUX5_IO(true);
+			_precharge_state = precharge_state::charging;
+			timechargestart = hrt_absolute_time();
+		}else{
+			AUX5_IO(false);
+			AUX6_IO(false);
+		}
+		/* code */
+		break;
+
+	case precharge_state::charging:
+		/* code */
+		if(hrt_absolute_time() - timechargestart >= 3_s){
+			AUX5_IO(false);
+			AUX6_IO(true);
+			_precharge_state = precharge_state::complete;
+		}
+		break;
+
+	case precharge_state::complete:
+		/* code */
+		_param_precharge.set(false);
+		_param_precharge.commit();
+		if(shutdown){
+			//如果关闭电源，拉低AUX6并且设置状态为waitaction，修改shutdown参数
+			AUX6_IO(false);
+			_precharge_state = precharge_state::waitaction;
+			_param_shutdown.set(false);
+			_param_shutdown.commit();
+		}
+		break;
+
+	default:
+		break;
+	}
+#endif
 
 	perf_end(_loop_perf);
 }
