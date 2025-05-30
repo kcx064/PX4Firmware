@@ -85,6 +85,7 @@ private:
 		waitaction = 0,
 		charging,
 		complete,
+		poweroff,
 	};
 	precharge_state _precharge_state = waitaction;
 	int32_t start_precharge{0};

@@ -28,6 +28,14 @@ namespace AKD202A2871_dcdc
 		uint8_t bytes[8];
 	};
 
+	//定义按位与运算位，bit0表示输入欠压报警，bit1表示输入过压报警，bit2表示过温报警，bit3表示输出过压报警，bit4表示输出过流报警
+	constexpr uint8_t STATUS_UNDER_VOLTAGE_INPUT = 1 << 0; 	// 输入欠压报警
+	constexpr uint8_t STATUS_OVER_VOLTAGE_INPUT = 1 << 1; 	// 输入过压报警
+	constexpr uint8_t STATUS_OVER_TEMPERATURE = 1 << 2; 	// 过温报警
+	constexpr uint8_t STATUS_OVER_VOLTAGE_OUTPUT = 1 << 3; 	// 输出过压报警
+	constexpr uint8_t STATUS_OVER_CURRENT_OUTPUT = 1 << 4; 	// 输出过流报警
+
+
 }
 
 
@@ -93,7 +101,33 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 		_dcdc_status.output_voltage_v = static_cast<float>(akd_status.status_s.output_voltage) * 0.1f;
 		_dcdc_status.output_current_a = static_cast<float>(akd_status.status_s.output_current) * 0.1f;
 		_dcdc_status.temperature_c = static_cast<float>(akd_status.status_s.temperature) - 40.0f;
-		_dcdc_status.status = akd_status.status_s.status_byte;
+		_dcdc_status.status_flags = akd_status.status_s.status_byte;
+		// 根据status_flags状态向地面站发出警报
+		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_UNDER_VOLTAGE_INPUT)
+		{
+			//输入欠压报警
+			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 undervoltage input");
+		}
+		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_VOLTAGE_INPUT)
+		{
+			//输入过压报警
+			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overvoltage input");
+		}
+		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_TEMPERATURE)
+		{
+			//过温报警
+			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 over temperature");
+		}
+		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_VOLTAGE_OUTPUT)
+		{
+			//输出过压报警
+			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overvoltage output");
+		}
+		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_CURRENT_OUTPUT)
+		{
+			//输出过流报警
+			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overcurrent output");
+		}
 		_dcdc_status.input_voltage_v = static_cast<float>(akd_status.status_s.input_voltage) * 0.1f;
 
 		_esc_status_pub.publish(_dcdc_status);

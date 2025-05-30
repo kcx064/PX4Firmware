@@ -108,7 +108,7 @@ void EvtolGpio::Run()
 	case precharge_state::charging:
 		/* code */
 		if(hrt_absolute_time() - timechargestart >= 3_s){
-			AUX5_IO(false);
+			//使能AUX6输出将预充短路。在进入下一个状态后，再正式断开预充AUX5
 			AUX6_IO(true);
 			_precharge_state = precharge_state::complete;
 		}
@@ -118,6 +118,12 @@ void EvtolGpio::Run()
 		/* code */
 		_param_precharge.set(false);
 		_param_precharge.commit();
+		//拉低AUX5，结束预充
+		AUX5_IO(false);
+		_precharge_state = precharge_state::poweroff;
+		break;
+
+	case precharge_state::poweroff:
 		if(shutdown){
 			//如果关闭电源，拉低AUX6并且设置状态为waitaction，修改shutdown参数
 			AUX6_IO(false);
