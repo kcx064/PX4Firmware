@@ -41,7 +41,7 @@ private:
     	uint32_t DCDC_INQUIRE_ID =
 		((0x07u << 24) | (dcdc_addr << 16) | (SENDER_ADDRESS << 8) | INQUIRE);
 	uint32_t DCDC_SET_ID =
-		((0x07u << 24) | (static_cast<uint32_t>(0xFF) << 16) | (SENDER_ADDRESS << 8) | POW_ID_SET);
+		((0x07u << 24) | (static_cast<uint32_t>(0xFF) << 16) | (0xD0 << 8) | POW_ID_SET);//根据厂家文档，改ID必须是D0
 
 	//声明一个枚举类型，成员分别表示开机0x01、关机0x02、和复位0x04
 	enum POWER_STATE
@@ -104,7 +104,7 @@ dcdc::updateOutputs()
 		powerState = POWER_STATE::WAITE;
 		break;
 	}
-
+	//TODO: 有时会因为总线拥挤导致开机关机失败，需要多次尝试。这里需要改进，判断是否收到DCDC返回的执行结果后再结束设置操作
 	if(powerState == POWER_STATE::POWER_OFF || powerState == POWER_STATE::POWER_ON || powerState == POWER_STATE::POWER_RESET)
 	{
 		txData[0] = powerState;

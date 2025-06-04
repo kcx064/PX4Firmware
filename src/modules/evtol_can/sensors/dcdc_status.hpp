@@ -15,9 +15,12 @@ namespace AKD202A2871_dcdc
 	//数据7：状态字
 	struct dcdc_status_t
 	{
-		uint16_t output_voltage;
-		uint16_t output_current;
-		uint16_t input_voltage;
+		uint8_t output_voltage_h;
+		uint8_t output_voltage_l;
+		uint8_t output_current_h;
+		uint8_t output_current_l;
+		uint8_t input_voltage_h;
+		uint8_t input_voltage_l;
 		int8_t temperature;
 		uint8_t status_byte;
 	};
@@ -40,12 +43,14 @@ namespace AKD202A2871_dcdc
 
 
 
-class dcdc_status : public CanSensorBridgeBase
+class dcdc_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	dcdc_status(){};
+	dcdc_status():
+		ModuleParams(nullptr)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -76,8 +81,15 @@ public:
 
 	dcdc_status_s _dcdc_status{};
 	uORB::PublicationMulti<dcdc_status_s> _esc_status_pub{ORB_ID(dcdc_status)};
+	uORB::SubscriptionInterval		_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
+
 
 	orb_advert_t 			_mavlink_log_pub{nullptr};
+
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::DCDC_ADDR>) _param_dcdc_addr
+	)//最后一行没有逗号
 };
 
 const char *const dcdc_status::NAME = "DCDC_STATUS";
@@ -94,14 +106,26 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 	perf_count(_count_perf);
 	_CANModule = canModule;
 	AKD202A2871_dcdc::status_u akd_status;
-	if (msg_id == msg_id_list[0])
+
+	// Check if parameters have changed
+	if (_parameter_update_sub.updated()) {
+		// clear update
+		parameter_update_s param_update;
+		_parameter_update_sub.copy(&param_update);
+		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
+	}
+
+	// TODO: 能否增加列表，列出当前监听的所有msg_id，便于调试和查看
+	if (msg_id == ((msg_id_list[0] & 0xFFFF00FF) | (_param_dcdc_addr.get() << 8)) )
 	{
 		memcpy(&akd_status.bytes, rxData, 8);
 		_dcdc_status.timestamp = hrt_absolute_time();
-		_dcdc_status.output_voltage_v = static_cast<float>(akd_status.status_s.output_voltage) * 0.1f;
-		_dcdc_status.output_current_a = static_cast<float>(akd_status.status_s.output_current) * 0.1f;
+		_dcdc_status.output_voltage_v = static_cast<float>(akd_status.status_s.output_voltage_h << 8 | akd_status.status_s.output_voltage_l) * 0.1f;
+		_dcdc_status.output_current_a = static_cast<float>(akd_status.status_s.output_current_h << 8 | akd_status.status_s.output_current_l) * 0.1f;
+		_dcdc_status.input_voltage_v = static_cast<float>(akd_status.status_s.input_voltage_h << 8 | akd_status.status_s.input_voltage_l) * 0.1f;
 		_dcdc_status.temperature_c = static_cast<float>(akd_status.status_s.temperature) - 40.0f;
 		_dcdc_status.status_flags = akd_status.status_s.status_byte;
+		_esc_status_pub.publish(_dcdc_status);
 		// 根据status_flags状态向地面站发出警报
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_UNDER_VOLTAGE_INPUT)
 		{
@@ -128,12 +152,10 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 			//输出过流报警
 			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overcurrent output");
 		}
-		_dcdc_status.input_voltage_v = static_cast<float>(akd_status.status_s.input_voltage) * 0.1f;
 
-		_esc_status_pub.publish(_dcdc_status);
 	}
 
-	if(msg_id == msg_id_list[1])
+	if(msg_id == ((msg_id_list[1] & 0xFFFF00FF) | (_param_dcdc_addr.get() << 8)))
 	{
 		if(rxData[0] == 0x01)
 		mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 shutdown");
