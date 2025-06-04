@@ -73,6 +73,17 @@ public:
 		return _CANModule;
 	}
 
+	void print_status() const override
+	{
+		printf("channel: %d(can port: %d)\n", _CANModule, (_CANModule+1));
+		perf_print_counter(_count_perf);
+		printf("can sensor message id list :\n");
+		for (size_t i = 0; i < MSG_ID_COUNT; i++)
+		{
+			printf("[%d]: 0x%08lX \n", i+1, msg_id_list[i]);
+		}
+	}
+
 	static constexpr uint32_t msg_id_list[] ={
 		(0x07E00101),//电池0x01返回状态
 		(0x07E00104),//电池0x01返回的遥控指令
@@ -115,7 +126,6 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 	}
 
-	// TODO: 能否增加列表，列出当前监听的所有msg_id，便于调试和查看
 	if (msg_id == ((msg_id_list[0] & 0xFFFF00FF) | (_param_dcdc_addr.get() << 8)) )
 	{
 		memcpy(&akd_status.bytes, rxData, 8);

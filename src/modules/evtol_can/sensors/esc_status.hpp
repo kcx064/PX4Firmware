@@ -150,6 +150,17 @@ public:
 		return _CANModule;
 	}
 
+	void print_status() const override
+	{
+		printf("channel: %d(can port: %d)\n", _CANModule, (_CANModule+1));
+		perf_print_counter(_count_perf);
+		printf("can sensor message id list :\n");
+		for (size_t i = 0; i < MSG_ID_COUNT; i++)
+		{
+			printf("[%d]: 0x%08lX \n", i+1, msg_id_list[i]);
+		}
+	}
+
 	static constexpr uint32_t msg_id_list[] ={
 		Esc0Status1,
 		Esc0Status2,
