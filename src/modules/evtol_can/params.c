@@ -114,7 +114,9 @@ PARAM_DEFINE_INT32(DB_AW_EN, 0);
 PARAM_DEFINE_INT32(DCDC_POW, 0);
 
 /**
- * HD DCDC power address
+ * HD DCDC address
+ *
+ * for changing dcdc id
  *
  * @min 1
  * @max 254

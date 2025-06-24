@@ -161,6 +161,7 @@ public:
 		}
 	}
 
+	//TODO: 根据具体旋翼数量确定列表长度？
 	static constexpr uint32_t msg_id_list[] ={
 		Esc0Status1,
 		Esc0Status2,

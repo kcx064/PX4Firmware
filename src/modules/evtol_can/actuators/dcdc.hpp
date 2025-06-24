@@ -8,6 +8,11 @@
 #include "../can_driver/MW_PX4_CAN_DEVICE.h"
 #include "CanDeviceInterface.hpp"
 
+/* 功能：
+ * 1.发送状态查询指令
+ * 2.开机、关机、重启
+ * 3.修改ID（仅连接一个DCDC的时候可以操作）
+ */
 class dcdc : public CanDeviceInterface
 {
 public:
@@ -16,8 +21,6 @@ public:
 	_h7can_device(h7can_device)
 	{
 		dcdc_addr = _param_dcdc_addr.get();
-		DCDC_POWER_CMD_ID = ((DCDC_POWER_CMD_ID & ~ADDR_MASK) | (static_cast<uint32_t>(dcdc_addr)<<16));
-		DCDC_INQUIRE_ID = ((DCDC_INQUIRE_ID & ~ADDR_MASK) | (static_cast<uint32_t>(dcdc_addr)<<16));
 	}
 	~dcdc();
 
@@ -28,7 +31,7 @@ private:
 	uint8_t len = 8;
 	uint32_t ADDR_MASK = 0x00FF0000;
 
-    	uint8_t dcdc_addr = 0x00;    		// DCDC power address: 0x01~0xFE, broadcast 0xFF
+    	uint8_t dcdc_addr = 0x01;    		// DCDC power address: 0x01~0xFE, broadcast 0xFF
     	uint8_t SENDER_ADDRESS = 0xE0;       	// Formal host: 0xE0, debug host: 0xD0
 
 
@@ -36,10 +39,15 @@ private:
 	uint8_t REMOTE_CONTROL = 0x04;       	// Placeholder for PF value
     	uint8_t POW_ID_SET = 0xA0;       	// Power ID setting
 
+	/* 两路dcdc，设置id为0x01和0x02，如需增加则依次类推 */
     	uint32_t DCDC_POWER_CMD_ID =
-		((0x07u << 24) | (dcdc_addr << 16) | (SENDER_ADDRESS << 8) | REMOTE_CONTROL);
+		((0x07u << 24) | (0x01 << 16) | (SENDER_ADDRESS << 8) | REMOTE_CONTROL);
     	uint32_t DCDC_INQUIRE_ID =
-		((0x07u << 24) | (dcdc_addr << 16) | (SENDER_ADDRESS << 8) | INQUIRE);
+		((0x07u << 24) | (0x01 << 16) | (SENDER_ADDRESS << 8) | INQUIRE);
+	uint32_t DCDC_POWER_CMD_ID_1 =
+		((0x07u << 24) | ((0x02) << 16) | (SENDER_ADDRESS << 8) | REMOTE_CONTROL);
+    	uint32_t DCDC_INQUIRE_ID_1 =
+		((0x07u << 24) | ((0x02) << 16) | (SENDER_ADDRESS << 8) | INQUIRE);
 	uint32_t DCDC_SET_ID =
 		((0x07u << 24) | (static_cast<uint32_t>(0xFF) << 16) | (0xD0 << 8) | POW_ID_SET);//根据厂家文档，改ID必须是D0
 
@@ -80,9 +88,12 @@ dcdc::updateOutputs()
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 	}
 
+	/* 向两个dcdc发送状态查询指令 */
 	uint8_t txData[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_INQUIRE_ID, 1, 0, len);
+	_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_INQUIRE_ID_1, 1, 0, len);
 
+	/* 向两个dcdc发送开机、关机、复位指令*/
 	switch (powerState)
 	{
 	case WAITE:
@@ -104,24 +115,25 @@ dcdc::updateOutputs()
 		powerState = POWER_STATE::WAITE;
 		break;
 	}
-	//TODO: 有时会因为总线拥挤导致开机关机失败，需要多次尝试。这里需要改进，判断是否收到DCDC返回的执行结果后再结束设置操作
+
 	if(powerState == POWER_STATE::POWER_OFF || powerState == POWER_STATE::POWER_ON || powerState == POWER_STATE::POWER_RESET)
-	{
+	{//TODO: 有时会因为总线拥挤导致开机关机失败，需要多次尝试。这里需要改进，判断是否收到DCDC返回的执行结果后再结束设置操作
 		txData[0] = powerState;
 		_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_POWER_CMD_ID, 1, 0, len);
+		_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_POWER_CMD_ID_1, 1, 0, len);
 		powerState = POWER_STATE::WAITE;
 		_param_dcdc_power.set(POWER_STATE::WAITE);
 		_param_dcdc_power.commit();
 	}
 
+	/* 为当前连接的DCDC修改ID。修改id时确认只有一路dcdc在can总线上 */
 	if(dcdc_addr != _param_dcdc_addr.get())
 	{
+		/* 发送修改id的指令 */
 		txData[0] = _param_dcdc_addr.get();
 		_h7can_device.transmitMessage(_CANModule, &txData[0], DCDC_SET_ID, 1, 0, len);
 
 		dcdc_addr = txData[0];
-		DCDC_POWER_CMD_ID = ((DCDC_POWER_CMD_ID & ~ADDR_MASK) | (static_cast<uint32_t>(dcdc_addr)<<16));
-		DCDC_INQUIRE_ID = ((DCDC_INQUIRE_ID & ~ADDR_MASK) | (static_cast<uint32_t>(dcdc_addr)<<16));
 	}
 
 	return true;

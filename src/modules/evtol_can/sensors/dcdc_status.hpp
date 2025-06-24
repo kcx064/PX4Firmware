@@ -87,6 +87,8 @@ public:
 	static constexpr uint32_t msg_id_list[] ={
 		(0x07E00101),//电池0x01返回状态
 		(0x07E00104),//电池0x01返回的遥控指令
+		(0x07E00201),//电池0x02返回状态
+		(0x07E00204),//电池0x02返回的遥控指令
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 
@@ -126,7 +128,9 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 	}
 
-	if (msg_id == ((msg_id_list[0] & 0xFFFF00FF) | (_param_dcdc_addr.get() << 8)) )
+	uint8_t dcdc_id = (msg_id & 0x0000FF00) >> 8;
+
+	if (msg_id == msg_id_list[0] || msg_id == msg_id_list[2])
 	{
 		memcpy(&akd_status.bytes, rxData, 8);
 		_dcdc_status.timestamp = hrt_absolute_time();
@@ -135,46 +139,47 @@ void dcdc_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, ui
 		_dcdc_status.input_voltage_v = static_cast<float>(akd_status.status_s.input_voltage_h << 8 | akd_status.status_s.input_voltage_l) * 0.1f;
 		_dcdc_status.temperature_c = static_cast<float>(akd_status.status_s.temperature) - 40.0f;
 		_dcdc_status.status_flags = akd_status.status_s.status_byte;
+		_dcdc_status.dcdc_id = dcdc_id;
 		_esc_status_pub.publish(_dcdc_status);
 		// 根据status_flags状态向地面站发出警报
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_UNDER_VOLTAGE_INPUT)
 		{
 			//输入欠压报警
-			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 undervoltage input");
+			mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u undervoltage input", dcdc_id);
 		}
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_VOLTAGE_INPUT)
 		{
 			//输入过压报警
-			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overvoltage input");
+			mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u overvoltage input", dcdc_id);
 		}
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_TEMPERATURE)
 		{
 			//过温报警
-			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 over temperature");
+			mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u over temperature", dcdc_id);
 		}
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_VOLTAGE_OUTPUT)
 		{
 			//输出过压报警
-			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overvoltage output");
+			mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u overvoltage output", dcdc_id);
 		}
 		if(_dcdc_status.status_flags & AKD202A2871_dcdc::STATUS_OVER_CURRENT_OUTPUT)
 		{
 			//输出过流报警
-			mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 overcurrent output");
+			mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u overcurrent output", dcdc_id);
 		}
 
 	}
 
-	if(msg_id == ((msg_id_list[1] & 0xFFFF00FF) | (_param_dcdc_addr.get() << 8)))
+	if(msg_id == msg_id_list[1] || msg_id == msg_id_list[3])
 	{
 		if(rxData[0] == 0x01)
-		mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 shutdown");
+		mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u shutdown", dcdc_id);
 
 		if(rxData[0] == 0x02)
-		mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 power on");
+		mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u power on", dcdc_id);
 
 		if(rxData[0] == 0x04)
-		mavlink_log_warning(&_mavlink_log_pub, "DC converter 1 reset");
+		mavlink_log_warning(&_mavlink_log_pub, "DC-DC %u reset", dcdc_id);
 	}
 
 }

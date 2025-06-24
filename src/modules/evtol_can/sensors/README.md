@@ -21,4 +21,6 @@ void sensor_template::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
 ```
 用户需要完成上面方法实现对所接收CAN消息的处理，其中msg_id可能的值均在msg_id_list中定义
 
+3.如果can接收缓存不足，需要在CMakeLists.txt中修改-DMW_NUM_CAN_RECEIVE_RAW为更大的数值
+
 
