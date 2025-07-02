@@ -1,5 +1,6 @@
 #include "CanSensorBridge.hpp"
 
+#include <px4_platform_common/defines.h>
 #include <battery/battery.h>
 #include <uORB/topics/battery_status.h>
 
@@ -174,6 +175,7 @@ void bms_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 
 	if(msg_id == msg_id_list[0])
 	{
+		memcpy(bms_hcu_info.data_raw, rxData, 8);
 		// _can_bms_status.timestamp = hrt_absolute_time();
 		// _can_bms_status.voltage_v = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
 		// _can_bms_status.voltage_filtered_v = _can_bms_status.voltage_v;
@@ -213,7 +215,7 @@ void bms_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 
 
 		float_t bms_voltage = (static_cast<uint16_t>((bms_hcu_info.data.batVoltage_H << 8) | bms_hcu_info.data.batVoltage_L))*BMS_VOLTAGE_SCALE;
-		float_t bms_current = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE-1000.0f);
+		float_t bms_current = -((static_cast<float>((bms_hcu_info.data.batCurrent_H << 8) | bms_hcu_info.data.batCurrent_L))*BMS_VOLTAGE_SCALE - 1000.0f);
 		_battery.setConnected(true);
 		_battery.updateVoltage(bms_voltage);
 		_battery.updateCurrent(bms_current);
