@@ -170,7 +170,7 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	px4_arch_configgpio(DB_RC_EN);//kechenxu
 	/* Power on Interfaces */
 	VDD_5V_PERIPH_EN(true);
-	VDD_5V_HIPOWER_EN(true);
+	// VDD_5V_HIPOWER_EN(true);kechenxu comment
 	board_control_spi_sensors_power(true, 0xffff);
 	// SPEKTRUM_POWER(true);kechenxu comment
 	BMS_POWER_EN(false);//kechenxu
