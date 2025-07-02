@@ -98,11 +98,13 @@ void EvtolGpio::Run()
 			AUX5_IO(true);
 			_precharge_state = precharge_state::charging;
 			timechargestart = hrt_absolute_time();
+			mavlink_log_warning(&_mavlink_log_pub, "Precharge start");
 		}else{
 			AUX5_IO(false);
 			AUX6_IO(false);
 		}
-		/* code */
+		_param_shutdown.set(false);
+		_param_shutdown.commit();
 		break;
 
 	case precharge_state::charging:
@@ -111,11 +113,11 @@ void EvtolGpio::Run()
 			//使能AUX6输出将预充短路。在进入下一个状态后，再正式断开预充AUX5
 			AUX6_IO(true);
 			_precharge_state = precharge_state::complete;
+			mavlink_log_warning(&_mavlink_log_pub, "Precharge complete");
 		}
 		break;
 
 	case precharge_state::complete:
-		/* code */
 		_param_precharge.set(false);
 		_param_precharge.commit();
 		//拉低AUX5，结束预充
@@ -127,13 +129,16 @@ void EvtolGpio::Run()
 		if(shutdown){
 			//如果关闭电源，拉低AUX6并且设置状态为waitaction，修改shutdown参数
 			AUX6_IO(false);
+			// ScheduleDelayed(500_us);
 			_precharge_state = precharge_state::waitaction;
-			_param_shutdown.set(false);
-			_param_shutdown.commit();
+			mavlink_log_warning(&_mavlink_log_pub, "Power off");
 		}
+		_param_precharge.set(false);
+		_param_precharge.commit();
 		break;
 
 	default:
+		_precharge_state = precharge_state::waitaction;
 		break;
 	}
 #endif

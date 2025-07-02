@@ -41,6 +41,7 @@
 
 #include <drivers/drv_hrt.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/systemlib/mavlink_log.h>
 
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
@@ -79,6 +80,9 @@ private:
 
 	// Subscriptions
 	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s}; // subscription limited to 1 Hz updates
+
+	//mavlink log on GCS(QGC)
+	orb_advert_t 			_mavlink_log_pub{nullptr};
 
 	//
 	enum precharge_state {
