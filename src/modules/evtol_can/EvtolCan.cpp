@@ -244,7 +244,7 @@ void EvtolCan::Run()
 
 		// Initialize can actuator
 		_canesc.set_rotor_num(_ca_rotor_count.get());
-		PX4_INFO("rotor&esc number %ld",_ca_rotor_count.get());
+		// PX4_INFO("rotor&esc number %ld",_ca_rotor_count.get());
 	}
 
 	if(!_node_init){
