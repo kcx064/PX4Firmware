@@ -3,6 +3,8 @@
 #include <px4_platform_common/defines.h>
 #include <battery/battery.h>
 #include <uORB/topics/battery_status.h>
+#include <uORB/topics/fullymax_battery_status.h>
+#include <uORB/topics/fullymax_battery_alarm.h>
 
 /* BMS can */
 #define BMS_HCU_INFO_DATA_TYPE_ID  0x186040F3
@@ -73,8 +75,8 @@ namespace fullymaxbms
 			uint8_t alm_bsu_fault : 1;
 			//byte 5
 			uint8_t reserved_0 : 6;
-			uint8_t alm_hvrel_fail : 1;
 			uint8_t alm_hall_break : 1;
+			uint8_t alm_hvrel_fail : 1;
 			//byte 6
 			uint8_t reserved_1 : 8;
 			//byte 7
@@ -146,13 +148,21 @@ public:
 
 	static constexpr uint32_t msg_id_list[] ={
 		(BMS_HCU_INFO_DATA_TYPE_ID),
+		(BMS_HCU_ALARM_DATA_TYPE_ID),
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 
 	// uORB::PublicationMulti<battery_status_s> _bms_status_pub{ORB_ID(battery_status)};
 	// battery_status_s  _can_bms_status{};
 
+	fullymax_battery_status_s _fullymax_status{};
+	uORB::PublicationMulti<fullymax_battery_status_s> _fullymax_status_pub{ORB_ID(fullymax_battery_status)};
+
+	fullymax_battery_alarm_s _fullymax_alarm{};
+	uORB::PublicationMulti<fullymax_battery_alarm_s> _fullymax_alarm_pub{ORB_ID(fullymax_battery_alarm)};
+
 	fullymaxbms::bms_hcu_info_t bms_hcu_info;
+	fullymaxbms::bms_hcu_alarm_t bms_hcu_alarm;
 
 	const float BMS_VOLTAGE_SCALE = 0.1f;
 
@@ -220,5 +230,47 @@ void bms_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 		_battery.updateVoltage(bms_voltage);
 		_battery.updateCurrent(bms_current);
 		_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
+
+		// 将剩余数据发布到自定义消息中
+		_fullymax_status.timestamp = hrt_absolute_time();
+		_fullymax_status.batsoc = bms_hcu_info.data.batSoc;
+		_fullymax_status.batsoh = bms_hcu_info.data.batSoh;
+		_fullymax_status.batalmlv = bms_hcu_info.data.batAlmLv;
+		_fullymax_status.batstate = bms_hcu_info.data.batState;
+		_fullymax_status.batlife = bms_hcu_info.data.batLife;
+		_fullymax_status_pub.publish(_fullymax_status);
+
+	}
+	if(msg_id == msg_id_list[1])
+	{
+		memcpy(bms_hcu_alarm.data_raw, rxData, 8);
+
+		_fullymax_alarm.timestamp = hrt_absolute_time();
+		_fullymax_alarm.alm_cell_ov = bms_hcu_alarm.data.alm_cell_ov;
+		_fullymax_alarm.alm_cell_uv = bms_hcu_alarm.data.alm_cell_uv;
+		_fullymax_alarm.alm_cell_ot = bms_hcu_alarm.data.alm_cell_ot;
+		_fullymax_alarm.alm_cell_ut = bms_hcu_alarm.data.alm_cell_ut;
+		_fullymax_alarm.alm_cell_lbk = bms_hcu_alarm.data.alm_cell_lbk;
+		_fullymax_alarm.alm_cell_tbk = bms_hcu_alarm.data.alm_cell_tbk;
+		_fullymax_alarm.alm_batt_dv = bms_hcu_alarm.data.alm_batt_dv;
+		_fullymax_alarm.alm_batt_dt = bms_hcu_alarm.data.alm_batt_dt;
+		_fullymax_alarm.alm_batt_ov = bms_hcu_alarm.data.alm_batt_ov;
+		_fullymax_alarm.alm_batt_uv = bms_hcu_alarm.data.alm_batt_uv;
+		_fullymax_alarm.alm_batt_oc = bms_hcu_alarm.data.alm_batt_oc;
+		_fullymax_alarm.alm_batt_uc = bms_hcu_alarm.data.alm_batt_uc;
+		_fullymax_alarm.alm_chrg_ocs = bms_hcu_alarm.data.alm_chrg_ocs;
+		_fullymax_alarm.alm_dsch_ocs = bms_hcu_alarm.data.alm_dsch_ocs;
+		_fullymax_alarm.alm_chrg_oct = bms_hcu_alarm.data.alm_chrg_oct;
+		_fullymax_alarm.alm_dsch_oct = bms_hcu_alarm.data.alm_dsch_oct;
+		_fullymax_alarm.alm_bsu_offline = bms_hcu_alarm.data.alm_bsu_offline;
+		_fullymax_alarm.alm_bsu_fault = bms_hcu_alarm.data.alm_bsu_fault;
+		_fullymax_alarm.alm_leak_oc = bms_hcu_alarm.data.alm_leak_oc;
+		_fullymax_alarm.alm_prechrg_fail = bms_hcu_alarm.data.alm_prechrg_fail;
+		_fullymax_alarm.alm_aux_fail = bms_hcu_alarm.data.alm_aux_fail;
+		_fullymax_alarm.alm_bmu_fail = bms_hcu_alarm.data.alm_bmu_fail;
+		_fullymax_alarm.alm_vcu_offline = bms_hcu_alarm.data.alm_vcu_offline;
+		_fullymax_alarm.alm_hvrel_fail = bms_hcu_alarm.data.alm_hvrel_fail;
+		_fullymax_alarm.alm_hall_break = bms_hcu_alarm.data.alm_hall_break;
+		_fullymax_alarm_pub.publish(_fullymax_alarm);
 	}
 }

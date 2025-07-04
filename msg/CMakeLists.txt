@@ -259,6 +259,8 @@ set(msg_files
 	CanServoRet.msg
 	Servoinfo.msg
 	DcdcStatus.msg
+	FullymaxBatteryStatus.msg
+	FullymaxBatteryAlarm.msg
 )
 list(SORT msg_files)
 

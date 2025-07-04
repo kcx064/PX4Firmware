@@ -139,6 +139,8 @@ void LoggedTopics::add_default_topics()
 	add_topic("wind", 1000);
 	add_topic("can_esc_status", 100);
 	add_optional_topic("dcdc_status", 500);
+	add_optional_topic("fullymax_battery_status", 200);
+	add_optional_topic("fullymax_battery_alarm", 1000);
 
 	// multi topics
 	add_optional_topic_multi("actuator_outputs", 100, 3);
