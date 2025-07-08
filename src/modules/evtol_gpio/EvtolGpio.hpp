@@ -107,7 +107,7 @@ private:
 		(ParamInt<px4::params::BMS_EN>) _param_bms_en,             /**< DB BMS EN */
 		(ParamInt<px4::params::RC_SEL>) _param_rc_sel,             /**< DB RC Select */
 		(ParamInt<px4::params::PRECHARGE>) _param_precharge,              /**< Precharge */
-		(ParamInt<px4::params::SHOTDOWN>) _param_shutdown            /**< Shutdown */
+		(ParamInt<px4::params::SHUTDOWN>) _param_shutdown            /**< Shutdown */
 	)
 
 };
