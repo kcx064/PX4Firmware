@@ -50,6 +50,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_accel.h>
 #include <uORB/topics/vehicle_status.h>
+#include <uORB/topics/input_rc.h>
 
 using namespace time_literals;
 
@@ -80,6 +81,10 @@ private:
 
 	// Subscriptions
 	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s}; // subscription limited to 1 Hz updates
+	uORB::Subscription 		   _input_rc_sub{ORB_ID(input_rc)};
+
+	// uorb topics object
+	input_rc_s 				_input_rc{};
 
 	//mavlink log on GCS(QGC)
 	orb_advert_t 			_mavlink_log_pub{nullptr};
@@ -95,6 +100,8 @@ private:
 	int32_t start_precharge{0};
 	int32_t shutdown{0};
 	hrt_abstime timechargestart{0};
+	int32_t shutdown_channel{8}; // Shutdown rc channel map
+	uint16_t shutdown_channel_value_last{0};
 
 	// Performance (perf) counters
 	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
@@ -106,8 +113,9 @@ private:
 		// (ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig  /**< another parameter */
 		(ParamInt<px4::params::BMS_EN>) _param_bms_en,             /**< DB BMS EN */
 		(ParamInt<px4::params::RC_SEL>) _param_rc_sel,             /**< DB RC Select */
-		(ParamInt<px4::params::PRECHARGE>) _param_precharge,              /**< Precharge */
-		(ParamInt<px4::params::SHUTDOWN>) _param_shutdown            /**< Shutdown */
+		(ParamInt<px4::params::PRECHARGE>) _param_precharge,       /**< Precharge */
+		(ParamInt<px4::params::SHUTDOWN>) _param_shutdown,          /**< Shutdown */
+		(ParamInt<px4::params::STD_CH>) _param_std_channel          /**< MIX Shutdown rc channel map */
 	)
 
 };

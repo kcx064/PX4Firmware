@@ -78,30 +78,47 @@ void EvtolGpio::Run()
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 #ifdef EVTOL_DB
 #pragma message("Code under EVTOL_DB is being compiled.")
-		BMS_POWER_EN(_param_bms_en.get());
+		// BMS_POWER_EN(_param_bms_en.get());
 		RC_SEL(_param_rc_sel.get());
 #endif
+		start_precharge = _param_precharge.get();
+		shutdown = _param_shutdown.get();
+		shutdown_channel = _param_std_channel.get();
+	}
 
 #ifdef EVTOL_MIX
 #pragma message("Code under EVTOL_MIX is being compiled.")
-		start_precharge = _param_precharge.get();
-		shutdown = _param_shutdown.get();
-#endif
+	if (_input_rc_sub.updated()) {
+		_input_rc_sub.copy(&_input_rc);
+		// PX4_INFO("RC channel count: %d", _input_rc.channel_count);
+		// PX4_INFO("RC channel %ld value: %d", shutdown_channel + 1, _input_rc.values[shutdown_channel]);
+		if(abs(_input_rc.values[shutdown_channel] - shutdown_channel_value_last)>350 && shutdown_channel_value_last > 100)
+		{//前后变化量大于350，且旧值不等于0(这里用100作为阈值判断)
+			// shutdown = 1;
+		}
+		shutdown_channel_value_last = _input_rc.values[shutdown_channel];
 	}
+#endif
 
 /* state mechaine */
-#ifdef EVTOL_MIX
 	switch (_precharge_state)
 	{
 	case precharge_state::waitaction:
 		if(start_precharge){
+#ifdef EVTOL_MIX
 			AUX5_IO(true);
+#endif
+#ifdef EVTOL_DB
+			BMS_POWER_EN(true);
+#endif
 			_precharge_state = precharge_state::charging;
 			timechargestart = hrt_absolute_time();
 			mavlink_log_warning(&_mavlink_log_pub, "Precharge start");
 		}else{
+#ifdef EVTOL_MIX
 			AUX5_IO(false);
 			AUX6_IO(false);
+#endif
 		}
 		_param_shutdown.set(false);
 		_param_shutdown.commit();
@@ -110,8 +127,10 @@ void EvtolGpio::Run()
 	case precharge_state::charging:
 		/* code */
 		if(hrt_absolute_time() - timechargestart >= 3_s){
+#ifdef EVTOL_MIX
 			//使能AUX6输出将预充短路。在进入下一个状态后，再正式断开预充AUX5
 			AUX6_IO(true);
+#endif
 			_precharge_state = precharge_state::complete;
 			mavlink_log_warning(&_mavlink_log_pub, "Precharge complete");
 		}
@@ -120,15 +139,22 @@ void EvtolGpio::Run()
 	case precharge_state::complete:
 		_param_precharge.set(false);
 		_param_precharge.commit();
+#ifdef EVTOL_MIX
 		//拉低AUX5，结束预充
 		AUX5_IO(false);
+#endif
 		_precharge_state = precharge_state::poweroff;
 		break;
 
 	case precharge_state::poweroff:
 		if(shutdown){
+#ifdef EVTOL_MIX
 			//如果关闭电源，拉低AUX6并且设置状态为waitaction，修改shutdown参数
 			AUX6_IO(false);
+#endif
+#ifdef EVTOL_DB
+			BMS_POWER_EN(false);
+#endif
 			// ScheduleDelayed(500_us);
 			_precharge_state = precharge_state::waitaction;
 			mavlink_log_warning(&_mavlink_log_pub, "Power off");
@@ -141,7 +167,6 @@ void EvtolGpio::Run()
 		_precharge_state = precharge_state::waitaction;
 		break;
 	}
-#endif
 
 	perf_end(_loop_perf);
 }
