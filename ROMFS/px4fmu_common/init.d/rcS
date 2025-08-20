@@ -381,7 +381,7 @@ else
 
 		if ! param compare BAT1_SOURCE 1
 		then
-			# battery_status start
+			battery_status start
 		fi
 
 		sensors start
