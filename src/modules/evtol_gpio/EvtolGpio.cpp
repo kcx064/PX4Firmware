@@ -86,19 +86,18 @@ void EvtolGpio::Run()
 		shutdown_channel = _param_std_channel.get();
 	}
 
-#ifdef EVTOL_MIX
-#pragma message("Code under EVTOL_MIX is being compiled.")
 	if (_input_rc_sub.updated()) {
 		_input_rc_sub.copy(&_input_rc);
 		// PX4_INFO("RC channel count: %d", _input_rc.channel_count);
 		// PX4_INFO("RC channel %ld value: %d", shutdown_channel + 1, _input_rc.values[shutdown_channel]);
 		if(abs(_input_rc.values[shutdown_channel] - shutdown_channel_value_last)>350 && shutdown_channel_value_last > 100)
 		{//前后变化量大于350，且旧值不等于0(这里用100作为阈值判断)
-			// shutdown = 1;
+			shutdown = 1;
+			mavlink_log_warning(&_mavlink_log_pub, "RC Power off command received");
+			PX4_INFO("Poweroff from RC channel %ld value: %d", shutdown_channel + 1, _input_rc.values[shutdown_channel]);
 		}
 		shutdown_channel_value_last = _input_rc.values[shutdown_channel];
 	}
-#endif
 
 /* state mechaine */
 	switch (_precharge_state)
