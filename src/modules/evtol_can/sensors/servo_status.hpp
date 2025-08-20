@@ -43,7 +43,7 @@ public:
 
 	servo_status():
 		ModuleParams(nullptr),
-		_battery(static_cast<int>(1), this, 500_ms, battery_status_s::BATTERY_SOURCE_POWER_MODULE)
+		_battery(static_cast<int>(1), this, 500_ms, battery_status_s::BATTERY_SOURCE_EXTERNAL)
 	{};
 
 	const char *get_name() const override { return NAME; }
