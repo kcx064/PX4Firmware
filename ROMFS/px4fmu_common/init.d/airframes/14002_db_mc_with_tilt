@@ -33,13 +33,16 @@ param set-default CA_ROTOR2_PX -0.825
 param set-default CA_ROTOR2_PY 0
 
 param set-default CA_ROTOR_COUNT 3
-param set-default CA_SV_TL0_MAXA 45
-param set-default CA_SV_TL0_MINA -45
-param set-default CA_SV_TL0_TD 90
-param set-default CA_SV_TL1_MAXA 45
-param set-default CA_SV_TL1_MINA -45
-param set-default CA_SV_TL1_TD 90
+param set-default CA_SV_TL0_MAXA 30
+param set-default CA_SV_TL0_MINA -30
+param set-default CA_SV_TL0_TD 0
+param set-default CA_SV_TL1_MAXA 30
+param set-default CA_SV_TL1_MINA -30
+param set-default CA_SV_TL1_TD 0
 param set-default CA_SV_TL_COUNT 2
+
+param set-default CA_ROTOR1_KM -0.050
+param set-default CAN_SV_REV 12
 
 # DB param
 # TELEM used GPS2
