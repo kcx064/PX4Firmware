@@ -956,8 +956,8 @@ GPS::run()
 			}
 
 			while ((helper_ret = _helper->receive(receive_timeout)) > 0 && !should_exit()) {
-
-				if (helper_ret & 1) {
+				// PX4_WARN("helper ret %d", helper_ret);
+				if (helper_ret & 2) {
 					publish();
 
 					last_rate_count++;
