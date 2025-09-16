@@ -82,9 +82,9 @@ canservo::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsi
 
 		if(servo_check_status == 0)
 		{
-			_servo_bias += 0.2f;
+			_servo_bias += 0.1f;
 		}else{
-			_servo_bias -= 0.2f;
+			_servo_bias -= 0.1f;
 		}
 	}else{
 		_servo_bias = 0;
