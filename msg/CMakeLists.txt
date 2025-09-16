@@ -261,6 +261,7 @@ set(msg_files
 	DcdcStatus.msg
 	FullymaxBatteryStatus.msg
 	FullymaxBatteryAlarm.msg
+	RedundancyDetector.msg
 )
 list(SORT msg_files)
 

@@ -19,7 +19,7 @@ extern "C" {
 
 /* sinemotion esc can */
 #define PRIORITY 0x00u
-#define LOCALNODE_ID 0x01u
+#define LOCALNODE_ID 0x00u
 #define DATETYPE_ID 0x4E2E
 #define BROADCAST_THROTTLE_2_ID ((PRIORITY << 24) | (DATETYPE_ID << 8) | LOCALNODE_ID)
 

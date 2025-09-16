@@ -112,7 +112,8 @@ private:
 	DEFINE_PARAMETERS(
 		(ParamInt<px4::params::CANRVE_INTERVAL>) _param_db_interval,
 		(ParamInt<px4::params::CAN_BITRATE>) _param_db_can_rate,
-		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count
+		(ParamInt<px4::params::CA_ROTOR_COUNT>) _ca_rotor_count,
+		(ParamInt<px4::params::EVTOL_NODE_ID>) _evtol_node_id
 	)//最后一行没有逗号
 
 	perf_counter_t	_cycle_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle time")};

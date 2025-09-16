@@ -133,7 +133,7 @@ PARAM_DEFINE_INT32(DCDC_ADDR, 1);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_DCDC, 1);
+PARAM_DEFINE_INT32(SUB_DCDC, 0);
 
 /**
  * Sinemotion ESC Subscribe
@@ -144,7 +144,7 @@ PARAM_DEFINE_INT32(SUB_DCDC, 1);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_SM_ESC, 1);
+PARAM_DEFINE_INT32(SUB_SM_ESC, 0);
 
 /**
  * IntelligenceGull ESC Subscribe
@@ -155,7 +155,7 @@ PARAM_DEFINE_INT32(SUB_SM_ESC, 1);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_IG_ESC, 1);
+PARAM_DEFINE_INT32(SUB_IG_ESC, 0);
 
 /**
  * Himark Servo Subscribe
@@ -166,7 +166,7 @@ PARAM_DEFINE_INT32(SUB_IG_ESC, 1);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_HMARK_SERVO, 1);
+PARAM_DEFINE_INT32(SUB_HMARK_SERVO, 0);
 
 /**
  * Fullymax Battery Subscribe
@@ -177,4 +177,24 @@ PARAM_DEFINE_INT32(SUB_HMARK_SERVO, 1);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_FM_BATT, 1);
+PARAM_DEFINE_INT32(SUB_FM_BATT, 0);
+
+/**
+ * Redundancy Detector Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_REDU_DETEC, 0);
+
+/**
+ * Local node id for sinemotion esc
+ *
+ * @min 1
+ * @max 255
+ * @group DB
+ */
+PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
