@@ -98,7 +98,7 @@ void PowerChecks::checkAndReport(const Context &context, Report &reporter)
 								     events::Log::Error, "Avionics Power low: {1:.2} Volt", avionics_power_rail_voltage, low_warning_threshold);
 
 				if (reporter.mavlink_log_pub()) {
-					mavlink_log_critical(reporter.mavlink_log_pub(), "Preflight Fail: Avionics Power low: %6.2f Volt",
+					mavlink_log_info(reporter.mavlink_log_pub(), "Preflight Fail: Avionics Power low: %6.2f Volt",
 							     (double)avionics_power_rail_voltage);
 				}
 
