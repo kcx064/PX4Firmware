@@ -45,6 +45,7 @@
  * @value 0 Direct velocity
  * @value 3 Smoothed velocity
  * @value 4 Acceleration based
+ * @value 5 Aerial Wearable
  * @group Multicopter Position Control
  */
 PARAM_DEFINE_INT32(MPC_POS_MODE, 4);

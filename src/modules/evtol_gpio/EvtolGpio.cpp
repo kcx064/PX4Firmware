@@ -84,12 +84,15 @@ void EvtolGpio::Run()
 		start_precharge = _param_precharge.get();
 		shutdown = _param_shutdown.get();
 		shutdown_channel = _param_std_channel.get();
+		wearable_channel = _param_wear_channel.get();
 	}
 
 	if (_input_rc_sub.updated()) {
 		_input_rc_sub.copy(&_input_rc);
 		// PX4_INFO("RC channel count: %d", _input_rc.channel_count);
 		// PX4_INFO("RC channel %ld value: %d", shutdown_channel + 1, _input_rc.values[shutdown_channel]);
+
+		/* 电源断电逻辑 */
 		if(abs(_input_rc.values[shutdown_channel] - shutdown_channel_value_last)>350 && shutdown_channel_value_last > 100)
 		{//前后变化量大于350，且旧值不等于0(这里用100作为阈值判断)
 			shutdown = 1;
@@ -97,6 +100,24 @@ void EvtolGpio::Run()
 			PX4_INFO("Poweroff from RC channel %ld value: %d", shutdown_channel + 1, _input_rc.values[shutdown_channel]);
 		}
 		shutdown_channel_value_last = _input_rc.values[shutdown_channel];
+
+		/* 悬浮穿戴模式的切换逻辑 */
+		if(_input_rc.values[wearable_channel]>1600)
+		{
+			if(_param_mpc_pos_mode.get() == 4)
+			{
+				mavlink_log_warning(&_mavlink_log_pub, "velocity mode");
+				_param_mpc_pos_mode.set(5);
+				_param_mpc_pos_mode.commit();
+			}
+		}else{
+			if(_param_mpc_pos_mode.get() == 5)
+			{
+				mavlink_log_info(&_mavlink_log_pub, "position mode");
+				_param_mpc_pos_mode.set(4);
+				_param_mpc_pos_mode.commit();
+			}
+		}
 	}
 
 /* state mechaine */

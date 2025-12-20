@@ -101,6 +101,7 @@ private:
 	int32_t shutdown{0};
 	hrt_abstime timechargestart{0};
 	int32_t shutdown_channel{8}; // Shutdown rc channel map
+	int32_t wearable_channel{9}; // Aerial Wearable rc channel map
 	uint16_t shutdown_channel_value_last{0};
 
 	// Performance (perf) counters
@@ -114,8 +115,10 @@ private:
 		(ParamInt<px4::params::BMS_EN>) _param_bms_en,             /**< DB BMS EN */
 		(ParamInt<px4::params::RC_SEL>) _param_rc_sel,             /**< DB RC Select */
 		(ParamInt<px4::params::PRECHARGE>) _param_precharge,       /**< Precharge */
-		(ParamInt<px4::params::SHUTDOWN>) _param_shutdown,          /**< Shutdown */
-		(ParamInt<px4::params::STD_CH>) _param_std_channel          /**< MIX Shutdown rc channel map */
+		(ParamInt<px4::params::SHUTDOWN>) _param_shutdown,         /**< Shutdown */
+		(ParamInt<px4::params::STD_CH>) _param_std_channel,        /**< MIX Shutdown rc channel map */
+		(ParamInt<px4::params::WEAR_CH>) _param_wear_channel,        /**< Aerial Wearable rc channel map */
+		(ParamInt<px4::params::MPC_POS_MODE>) _param_mpc_pos_mode  /**<  */
 	)
 
 };
