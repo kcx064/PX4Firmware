@@ -63,6 +63,7 @@ private:
 
 
 	uORB::PublicationMulti<debug_value_s> _debug_pub{ORB_ID(debug_value)};
+	//
 	uORB::PublicationMulti<redundancy_detector_s> _redundancy_detector_2nd_pub{ORB_ID(redundancy_detector_second)};
 
 	uORB::Subscription		_redundancy_detector_sub{ORB_ID(redundancy_detector)};
@@ -92,7 +93,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	r_detector_2nd.receive_interval = hrt_absolute_time() - last_received_timestamp;
 	_redundancy_detector_2nd_pub.publish(r_detector_2nd);
 	if (r_detector_2nd.receive_interval >= 30000 && last_received_timestamp != 0)
-	{
+	{/* 超时30ms以上，认为主飞控失效 */
 		enable_backup = 1;
 	}
 
@@ -104,7 +105,12 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	uint8_t len = 0;
 	while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
 	{
-		if(enable_backup)_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len);
+		if(enable_backup){/*对于主飞控，enable_backup默认为1，备份飞控默认为0，当备飞控检测到主飞控异常后，enable_backup会变为1 */
+			if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len))
+			{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
+				_h7can_device.transmitMessage(!_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len);
+			}
+		}
 	}
 	sinemotion_esc.clear_esc_cmds();
 }
