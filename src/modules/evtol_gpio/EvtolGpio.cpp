@@ -113,7 +113,7 @@ void EvtolGpio::Run()
 		}else{
 			if(_param_mpc_pos_mode.get() == 5)
 			{
-				mavlink_log_info(&_mavlink_log_pub, "position mode");
+				mavlink_log_warning(&_mavlink_log_pub, "position mode");
 				_param_mpc_pos_mode.set(4);
 				_param_mpc_pos_mode.commit();
 			}

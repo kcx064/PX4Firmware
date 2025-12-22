@@ -63,7 +63,7 @@ PARAM_DEFINE_INT32(SHUTDOWN, 0);
  * @value 16 Channel 17
  * @value 17 Channel 18
  */
-PARAM_DEFINE_INT32(STD_CH, 8);
+PARAM_DEFINE_INT32(STD_CH, 9);
 
 /**
  * Aerial Wearable rc channel map
@@ -86,4 +86,4 @@ PARAM_DEFINE_INT32(STD_CH, 8);
  * @value 16 Channel 17
  * @value 17 Channel 18
  */
-PARAM_DEFINE_INT32(WEAR_CH, 9);
+PARAM_DEFINE_INT32(WEAR_CH, 8);
