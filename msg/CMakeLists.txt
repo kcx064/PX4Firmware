@@ -262,6 +262,7 @@ set(msg_files
 	FullymaxBatteryStatus.msg
 	FullymaxBatteryAlarm.msg
 	RedundancyDetector.msg
+	VelocityCtrlStatus.msg
 )
 list(SORT msg_files)
 

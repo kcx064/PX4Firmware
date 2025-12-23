@@ -44,6 +44,7 @@
 #include <uORB/topics/trajectory_setpoint.h>
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/vehicle_local_position_setpoint.h>
+#include <uORB/topics/velocity_ctrl_status.h>
 
 struct PositionControlStates {
 	matrix::Vector3f position;
@@ -175,6 +176,8 @@ public:
 	 * @param local_position_setpoint reference to struct to fill up
 	 */
 	void getLocalPositionSetpoint(vehicle_local_position_setpoint_s &local_position_setpoint) const;
+
+	void getVelocityCtrlStatus(velocity_ctrl_status_s &velocity_ctrl_status) const;
 
 	/**
 	 * Get the controllers output attitude setpoint
