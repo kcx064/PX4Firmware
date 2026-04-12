@@ -50,6 +50,7 @@ px4_add_module(
 		can_driver/rtwtypes.h
 		actuators/canesc.hpp
 		actuators/throttle_dronecan_msg.hpp
+		actuators/tmotor_dronecan_msg.hpp
 		actuators/CanMixingInterfaceEsc.hpp
 		actuators/CanMixingInterfaceServo.hpp
 		actuators/dcdc.hpp

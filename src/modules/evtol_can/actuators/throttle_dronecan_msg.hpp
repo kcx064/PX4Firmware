@@ -173,7 +173,7 @@ public:
 		if (buffer == nullptr || len == nullptr) {
 			return 1;
 		}
-		if(remain_data ==0)
+		if(remain_data == 0)
 		{
 			return 1;
 		}
