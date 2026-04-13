@@ -198,3 +198,32 @@ PARAM_DEFINE_INT32(SUB_REDU_DETEC, 0);
  * @group DB
  */
 PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
+
+/**
+ * Current Local node id of t-motor esc
+ *
+ * @min 0
+ * @max 255
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(CUT_NODE_ID, 0);
+
+/**
+ * Target Local node id for t-motor esc
+ *
+ * @min 0
+ * @max 255
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(SET_NODE_ID, 0);
+
+/**
+ * Start esc param set
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(SET_PARAM, 0);
