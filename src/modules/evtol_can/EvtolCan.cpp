@@ -11,7 +11,8 @@ EvtolCan::EvtolCan(MW_H7CAN_DEVICE& h7can_device) :
 	_h7can_device(h7can_device),
 	_canesc(_h7can_device),
 	_canservo(_h7can_device),
-	_dcdc(_node_mutex, _h7can_device)
+	_dcdc(_node_mutex, _h7can_device),
+	_esc_paramset(_node_mutex, _h7can_device)
 {
 	int res = pthread_mutex_init(&_node_mutex, nullptr);
 	_h7can_device.init(0, _param_db_can_rate.get(), 0);
@@ -199,16 +200,20 @@ void EvtolCan::print_info()
 {
 	(void)pthread_mutex_lock(&_node_mutex);
 
-	printf("Evtol can esc status:\n");
+	printf("Evtol CAN esc status:\n");
 	_can_interface_esc.print_status();
 	printf("\n");
 
-	printf("Evtol can servo status:\n");
+	printf("Evtol CAN servo status:\n");
 	_can_interface_servo.print_status();
 	printf("\n");
 
-	printf("Evtol can dc converter status:\n");
+	printf("Evtol CAN dc converter status:\n");
 	_dcdc.print_status();
+	printf("\n");
+
+	printf("Evtol CAN esc paramset status:\n");
+	_esc_paramset.print_status();
 	printf("\n");
 
 	// Sensor bridges
@@ -315,6 +320,7 @@ int EvtolCan::start()
 	_instance->_can_interface_esc.ScheduleNow();
 	_instance->_can_interface_servo.ScheduleNow();
 	_instance->_dcdc.ScheduleOnInterval(1_s);
+	_instance->_esc_paramset.ScheduleOnInterval(1_s);
 	return 0;
 }
 

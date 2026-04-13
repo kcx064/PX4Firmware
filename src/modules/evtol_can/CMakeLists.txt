@@ -54,7 +54,9 @@ px4_add_module(
 		actuators/CanMixingInterfaceEsc.hpp
 		actuators/CanMixingInterfaceServo.hpp
 		actuators/dcdc.hpp
+		actuators/esc_paramset.hpp
 		actuators/CanDeviceInterface.hpp
+		actuators/lib_uavcan_packager.hpp
 		sensors/CanSensorBridge.cpp
 		sensors/CanSensorBridge.hpp
 		sensors/esc_status.hpp

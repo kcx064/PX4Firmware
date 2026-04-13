@@ -41,18 +41,20 @@ typedef union signature
 	uint8_t buffer[8];
 }signature_t;
 
-typedef union crc16
-{
-	uint16_t crc_val;
-	uint8_t crc16_byte[2];
-}crc16_u;
-
 #pragma pack(pop)
 
 
 class raw_command
 {
 private:
+	#pragma pack(push,1)
+	typedef union crc16
+	{
+		uint16_t crc_val;
+		uint8_t crc16_byte[2];
+	}crc16_u;
+	#pragma pack(pop)
+
 	static constexpr uint8_t CRC_THRESHOLD = 7;
 	uint8_t _esc_num{8};
 	uint8_t _need_crc{0};

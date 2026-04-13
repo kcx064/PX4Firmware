@@ -19,6 +19,7 @@
 
 #include "can_driver/MW_PX4_CAN_DEVICE.h"
 #include "actuators/dcdc.hpp"
+#include "actuators/esc_paramset.hpp"
 #include "actuators/canesc.hpp"
 #include "actuators/canservo.hpp"
 #include "actuators/CanMixingInterfaceEsc.hpp"
@@ -85,6 +86,7 @@ private:
 	CanMixingInterfaceServo		_can_interface_servo{_node_mutex, _canservo};
 
 	dcdc				_dcdc;
+	esc_paramset			_esc_paramset;
 
 
 	static EvtolCan			*_instance;			///< singleton pointer
