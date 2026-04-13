@@ -303,7 +303,7 @@ public:
 
 		if(transferred_data == byte_len)
 		{
-			PX4_INFO("transferred_data == byte_len");
+			// PX4_INFO("transferred_data == byte_len");
 			return 1;
 		}
 
