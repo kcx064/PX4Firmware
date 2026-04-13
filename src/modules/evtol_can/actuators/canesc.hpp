@@ -123,8 +123,8 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 		// 	}
 		// }
 	}
-	while(!uavcan_esc.get_package(&esc_msg_data[0], &len))
-	{
+
+	while(!uavcan_esc.get_package(&esc_msg_data[0], &len)){
 		if(enable_backup){/*对于主飞控，enable_backup默认为1，备份飞控默认为0，当备飞控检测到主飞控异常后，enable_backup会变为1 */
 			if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _uavcan_cmd_id, 1, 0, len))
 			{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
@@ -132,6 +132,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 			}
 		}
 	}
+
 	sinemotion_esc.clear_esc_cmds();
 	uavcan_esc.clear_esc_cmds();
 }

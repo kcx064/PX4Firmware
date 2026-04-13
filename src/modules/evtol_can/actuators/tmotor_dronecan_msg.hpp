@@ -49,39 +49,6 @@ typedef union crc16
 
 #pragma pack(pop)
 
-/**
- * @brief 通过索引设置油门量值
- * @param  u     联合体指针
- * @param  idx  油门量索引 (0-19)
- * @param  val  油门量值 (0-16383)
- */
-#define THROTTLE_SET(u, idx, val) do { \
-    uint16_t _v = (val); \
-    switch(idx) { \
-        case 0:  (u)->throttle_bit.throttle_0  = _v; break; \
-        case 1:  (u)->throttle_bit.throttle_1  = _v; break; \
-        case 2:  (u)->throttle_bit.throttle_2  = _v; break; \
-        case 3:  (u)->throttle_bit.throttle_3  = _v; break; \
-        case 4:  (u)->throttle_bit.throttle_4  = _v; break; \
-        case 5:  (u)->throttle_bit.throttle_5  = _v; break; \
-        case 6:  (u)->throttle_bit.throttle_6  = _v; break; \
-        case 7:  (u)->throttle_bit.throttle_7  = _v; break; \
-        case 8:  (u)->throttle_bit.throttle_8  = _v; break; \
-        case 9:  (u)->throttle_bit.throttle_9  = _v; break; \
-        case 10: (u)->throttle_bit.throttle_10 = _v; break; \
-        case 11: (u)->throttle_bit.throttle_11 = _v; break; \
-        case 12: (u)->throttle_bit.throttle_12 = _v; break; \
-        case 13: (u)->throttle_bit.throttle_13 = _v; break; \
-        case 14: (u)->throttle_bit.throttle_14 = _v; break; \
-        case 15: (u)->throttle_bit.throttle_15 = _v; break; \
-        case 16: (u)->throttle_bit.throttle_16 = _v; break; \
-        case 17: (u)->throttle_bit.throttle_17 = _v; break; \
-        case 18: (u)->throttle_bit.throttle_18 = _v; break; \
-        case 19: (u)->throttle_bit.throttle_19 = _v; break; \
-        default: break; \
-    } \
-} while(0)
-
 
 class raw_command
 {
@@ -184,7 +151,6 @@ private:
 	}
 
 
-
 	/* 计算有效数据的CRC
 	* Reference https://legacy.uavcan.org/Specification/4._CAN_bus_transport_layer/
 	* The transfer CRC algorithm is specified as follows:
@@ -196,6 +162,42 @@ private:
 	* Output XOR: 0
 	* Check: 0x29B1
 	*/
+	uint16_t crcAddByte(uint16_t crc_val, uint8_t byte)
+	{
+		crc_val ^= (uint16_t) ((uint16_t) (byte) << 8);
+		for (uint8_t j = 0; j < 8; j++)
+		{
+			if (crc_val & 0x8000U)
+			{
+				crc_val = (uint16_t) ((uint16_t) (crc_val << 1) ^ 0x1021U);
+			}
+			else
+			{
+				crc_val = (uint16_t) (crc_val << 1);
+			}
+		}
+		return crc_val;
+	}
+
+	uint16_t crcAddSignature(uint16_t crc_val, uint64_t data_type_signature)
+	{
+		for (uint16_t shift_val = 0; shift_val < 64; shift_val = (uint16_t)(shift_val + 8U))
+		{
+			crc_val = crcAddByte(crc_val, (uint8_t) (data_type_signature >> shift_val));
+		}
+		return crc_val;
+	}
+
+	uint16_t crcAdd(uint16_t crc_val, const uint8_t* bytes, size_t len)
+	{
+		while (len--)
+		{
+			crc_val = crcAddByte(crc_val, *bytes++);
+		}
+		return crc_val;
+	}
+
+
 	// uint16_t cal_uavcan_crc(){
 	// 	uint8_t data[sizeof(uint64_t) + RAW_CMD_LENGTH*8];
 	// 	/* 添加签名数据 */
@@ -258,23 +260,28 @@ public:
 			// 大于7字节则需要计算 CRC16
 			if(byte_len > 7)
 			{
-				_crc16.crc_val = crc16_signature(0xFFFF, 8, _signature.buffer);
-				_crc16.crc_val = crc16_signature(_crc16.crc_val, byte_len, raw_cmd.byte_array);
+				// _crc16.crc_val = crc16_signature(0xFFFF, 8, _signature.buffer);
+				// _crc16.crc_val = crc16_signature(_crc16.crc_val, byte_len, raw_cmd.byte_array);
+
+				_crc16.crc_val = crcAddSignature(0xFFFF, _signature.signature);
+				_crc16.crc_val = crcAdd(_crc16.crc_val, raw_cmd.byte_array, byte_len);
+
 				_need_crc = 1;
 			}
 
 			// 填充完毕设置开始传输标志
 			start_of_transfer = true;
-			PX4_INFO("raw_cmd byte %x, %x, %x, %x, %x, %x, %x, %x, %x",
-				raw_cmd.byte_array[0],
-				raw_cmd.byte_array[1],
-				raw_cmd.byte_array[2],
-				raw_cmd.byte_array[3],
-				raw_cmd.byte_array[4],
-				raw_cmd.byte_array[5],
-				raw_cmd.byte_array[6],
-				raw_cmd.byte_array[7],
-				raw_cmd.byte_array[8]);
+			transferred_data = 0;
+			// PX4_INFO("raw_cmd byte %x, %x, %x, %x, %x, %x, %x, %x, %x",
+			// 	raw_cmd.byte_array[0],
+			// 	raw_cmd.byte_array[1],
+			// 	raw_cmd.byte_array[2],
+			// 	raw_cmd.byte_array[3],
+			// 	raw_cmd.byte_array[4],
+			// 	raw_cmd.byte_array[5],
+			// 	raw_cmd.byte_array[6],
+			// 	raw_cmd.byte_array[7],
+			// 	raw_cmd.byte_array[8]);
 			return 1;
 		}
 
@@ -291,6 +298,12 @@ public:
 
 	int8_t get_package(uint8_t *buffer, uint8_t *len){
 		if (buffer == nullptr || len == nullptr) {
+			return 1;
+		}
+
+		if(transferred_data == byte_len)
+		{
+			PX4_INFO("transferred_data == byte_len");
 			return 1;
 		}
 
@@ -322,13 +335,13 @@ public:
 
 
 					end_of_transfer = false;
-					toggle = !toggle;
 					buffer[7] = static_cast<uint8_t>(
 						(start_of_transfer << 7) |
 						(end_of_transfer << 6) |
 						(toggle << 5) |
 						(transfer_id >> 3)
 					);
+					toggle = !toggle;
 					*len = 8;
 					return 0;//返回0表示数据未全部打包完毕
 				}else{//说明是最后一帧
@@ -336,36 +349,37 @@ public:
 					transferred_data += remain_byte;
 
 					end_of_transfer = true;
-					toggle = !toggle;
+
 					buffer[remain_byte] = static_cast<uint8_t>(
 						(start_of_transfer << 7) |
 						(end_of_transfer << 6) |
 						(toggle << 5) |
 						(transfer_id >> 3)
 					);
+					toggle = !toggle;
 					*len = remain_byte + 1;
-					return 1;//返回1表示数据全部打包完毕
+					return 0;
 				}
-
-
 			}
 
 		}else{//不需要CRC时候，说明数据包小于等于7字节，那么数据包内容为负载+尾字节
 			memcpy(buffer, raw_cmd.byte_array, byte_len);
+			transferred_data = byte_len;
 
 			transfer_id += 8;
 			end_of_transfer = true;
-			toggle = false;
-			buffer[byte_len+1] = static_cast<uint8_t>(
+
+			buffer[byte_len] = static_cast<uint8_t>(
 				(start_of_transfer << 7) |
 				(end_of_transfer << 6) |
 				(toggle << 5) |
 				(transfer_id >> 3)
 			);
+			toggle = !toggle;
 			*len = byte_len + 1;
 			start_of_transfer = false;
-			//返回1表示数据打包完毕
-			return 1;
+
+			return 0;
 		}
 	}
 };
