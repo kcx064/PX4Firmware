@@ -22,7 +22,7 @@ extern "C" {
 #define THROTTLE_14BIT_MAX   ((uint16_t)0x3FFF)  /* 16383 */
 
 /* tmotor esc can */
-#define RAW_COMMAND_PRIORITY 0x18u
+#define RAW_COMMAND_PRIORITY 0x00u
 #define RAW_COMMAND_LOCALNODE_ID 0x00u
 #define RAW_COMMAND_DATETYPE_ID 1030
 #define RAW_COMMAND_ID ((RAW_COMMAND_PRIORITY << 24) | (RAW_COMMAND_DATETYPE_ID << 8) | RAW_COMMAND_LOCALNODE_ID)
@@ -325,7 +325,7 @@ public:
 					(toggle << 5) |
 					(transfer_id >> 3)
 				);
-
+				toggle = !toggle;
 				*len = 8;
 				start_of_transfer = false;
 				return 0;//返回0表示数据未全部打包完毕
@@ -370,6 +370,7 @@ public:
 
 			transfer_id += 8;
 			end_of_transfer = true;
+			toggle = false;
 
 			buffer[byte_len] = static_cast<uint8_t>(
 				(start_of_transfer << 7) |
@@ -377,7 +378,6 @@ public:
 				(toggle << 5) |
 				(transfer_id >> 3)
 			);
-			toggle = !toggle;
 			*len = byte_len + 1;
 			start_of_transfer = false;
 

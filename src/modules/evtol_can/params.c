@@ -191,10 +191,12 @@ PARAM_DEFINE_INT32(SUB_FM_BATT, 0);
 PARAM_DEFINE_INT32(SUB_REDU_DETEC, 0);
 
 /**
- * Local node id for sinemotion esc
+ * The Node ID used to distinguish between the primary and secondary autopilot
  *
  * @min 1
- * @max 255
+ * @max 2
+ * @value 1 Primary Autopilot
+ * @value 2 Secondary Autopilot
  * @group DB
  */
 PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
@@ -227,3 +229,60 @@ PARAM_DEFINE_INT32(SET_NODE_ID, 0);
  * @group DB PARAM
  */
 PARAM_DEFINE_INT32(SET_PARAM, 0);
+
+/**
+ * pitch rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_PITCHRATE_I, 0.02);
+
+/**
+ * roll rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_ROLLRATE_I, 0.02);
+
+/**
+ * yaw rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_YAWRATE_I, 0.08);
+
+/**
+ * B_XY_VEL_I_ACC
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_XY_VEL_I_ACC, 0.4);
+
+/**
+ * B_Z_VEL_I_ACC
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_Z_VEL_I_ACC, 2.0);
+
+/**
+ * When set t-motor esc param, please disable throttle output
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB PARAM
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(OUT_THR, 1);

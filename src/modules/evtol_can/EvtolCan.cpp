@@ -252,6 +252,8 @@ void EvtolCan::Run()
 		// PX4_INFO("rotor&esc number %ld",_ca_rotor_count.get());
 		// set node id for can esc
 		_canesc.set_node_id((uint8_t)_evtol_node_id.get());
+
+		_esc_paramset.set_node_id((uint8_t)_evtol_node_id.get());
 	}
 
 	if(!_node_init){

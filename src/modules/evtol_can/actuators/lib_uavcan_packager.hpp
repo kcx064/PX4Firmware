@@ -45,6 +45,7 @@ public:
 	{
 		start_of_transfer = true;
 		transferred_data = 0;
+		toggle = 0;
 		return 0;
 	}
 
@@ -87,7 +88,7 @@ public:
 					(toggle << 5) |
 					(transfer_id >> 3)
 				);
-
+				toggle = !toggle;
 				*pkg_len = 8;
 				start_of_transfer = false;
 				return 0;//返回0表示数据未全部打包完毕
@@ -96,7 +97,6 @@ public:
 				if(remain_byte > 7){//说明不是最后一帧
 					memcpy(pkg_buffer, &_buffer[transferred_data], 7);
 					transferred_data += 7;
-
 
 					end_of_transfer = false;
 					pkg_buffer[7] = static_cast<uint8_t>(
@@ -132,6 +132,7 @@ public:
 
 			transfer_id += 8;
 			end_of_transfer = true;
+			toggle = false;
 
 			pkg_buffer[_len] = static_cast<uint8_t>(
 				(start_of_transfer << 7) |
@@ -139,7 +140,6 @@ public:
 				(toggle << 5) |
 				(transfer_id >> 3)
 			);
-			toggle = !toggle;
 			*pkg_len = _len + 1;
 			start_of_transfer = false;
 

@@ -2,12 +2,14 @@
 
 #include <uORB/topics/redundancy_detector.h>
 
-class redundancy_detector : public CanSensorBridgeBase
+class redundancy_detector : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	redundancy_detector(){};
+	redundancy_detector() :
+		ModuleParams(nullptr)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -41,10 +43,11 @@ public:
 		}
 	}
 
-	static constexpr uint32_t msg_id_list[] ={
-		(0x004E2E01),
+	uint32_t msg_id_list[1]={
+		// (0x004E2E01)
+		(0x00040600)
 	};
-	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
+	uint8_t MSG_ID_COUNT = 1;
 private:
 
 	redundancy_detector_s _redundancy_detector{};
@@ -52,14 +55,27 @@ private:
 
 	hrt_abstime last_receive_time{0};
 	hrt_abstime receive_interval{0};
+
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::EVTOL_NODE_ID>) _evtol_node_id
+	)//最后一行没有逗号
 };
 
 const char *const redundancy_detector::NAME = "REDUNDANCY_DETECTOR";
-constexpr uint32_t redundancy_detector::msg_id_list[];
-constexpr size_t redundancy_detector::MSG_ID_COUNT;
+// constexpr uint32_t redundancy_detector::msg_id_list[];
+// constexpr size_t redundancy_detector::MSG_ID_COUNT;
 
 int redundancy_detector::init()
 {
+	if(_evtol_node_id.get() == 1)
+	{
+		//如果节点id==1，本飞控是主飞控，那么需要监听备飞控的控制输出,这里要求备飞控的node id == 2
+		msg_id_list[0] |= 0x02;
+	}else{
+		//否则认为节点id等于2，那么需要监听主飞控的控制输出
+		msg_id_list[0] |= 0x01;
+	}
 	return 0;
 }
 

@@ -19,7 +19,8 @@ extern "C" {
 
 #define PARAM_CFG_PRIORITY 0x18u
 #define PARAM_CFG_DATETYPE_ID 1033u
-#define PARAM_CFG_LOCALNODE_ID 0x01u
+#define PARAM_CFG_LOCALNODE_ID 0x00u
+// @TODO ID的local_node_id 能够通过参数设定
 #define PARAM_CFG_ID ((PARAM_CFG_PRIORITY << 24) | (PARAM_CFG_DATETYPE_ID << 8) | PARAM_CFG_LOCALNODE_ID)
 
 #pragma pack(push,1)
@@ -60,6 +61,13 @@ public:
 	~esc_paramset();
 
 	bool updateOutputs() override;
+
+	uint32_t _paramset_id{PARAM_CFG_ID};
+
+	void set_node_id(uint8_t node_id)
+	{
+		_paramset_id |= node_id;
+	}
 private:
 	#pragma pack(push,1)
 	typedef union crc16
@@ -76,10 +84,10 @@ private:
 	crc16_u _crc16{.crc_val=0};
 	MW_H7CAN_DEVICE 		&_h7can_device;
 
-	param_cfg_u paramCfg{.buffer{0xff,}};
+	param_cfg_u paramCfg{.buffer{0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff}};
 	signature_u _signature{.signature{0x948F5E0B33E0EDEE}};
 	uavcan_packager _uavcan_packager{paramCfg.buffer, sizeof(paramCfg)};
-	uint8_t set_node_id{1};
+	uint8_t set_esc_node_id{1};
 	uint8_t current_node_id{1};
 	uint8_t set_esc_param{0};
 
@@ -109,14 +117,18 @@ esc_paramset::updateOutputs()
 		_parameter_update_sub.copy(&param_update);
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 		current_node_id = _param_current_node_id.get();
-		set_node_id = _param_set_node_id.get();
+		set_esc_node_id = _param_set_node_id.get();
 		set_esc_param = _param_esc_set.get();
 	}
 
 	if(set_esc_param)
 	{
 		paramCfg.current_esc_id = current_node_id;
-		paramCfg.tgt_esc_id = set_node_id;
+		// paramCfg.uuid = 0x53A072D7;
+		paramCfg.tgt_esc_id = set_esc_node_id;
+		paramCfg.priority_and_fixed_propeller = 0x02; //CAN优先级、定桨关闭
+		paramCfg.param_save = 0x01;
+
 		_crc16.crc_val = crc16_signature(0xFFFF, 8, _signature.buffer);
 		_crc16.crc_val = crc16_signature(_crc16.crc_val, sizeof(paramCfg), paramCfg.buffer);
 
@@ -127,7 +139,7 @@ esc_paramset::updateOutputs()
 		uint8_t len = 0;
 		while(!_uavcan_packager.get_package(txData, &len))
 		{
-			_h7can_device.transmitMessage(_CANModule, &txData[0], PARAM_CFG_ID, 1, 0, len);
+			_h7can_device.transmitMessage(_CANModule, &txData[0], _paramset_id, 1, 0, len);
 			PX4_INFO("Sent parameter package");
 		}
 		PX4_INFO("Sent Completed");
