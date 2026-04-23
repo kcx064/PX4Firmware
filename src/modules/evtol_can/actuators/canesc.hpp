@@ -92,6 +92,7 @@ private:
 
 	uint8_t 			out_thr{1};
 
+	orb_advert_t 			_mavlink_log_pub{nullptr};
 
 	uORB::PublicationMulti<debug_value_s> _debug_pub{ORB_ID(debug_value)};
 	//
@@ -160,29 +161,42 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	_redundancy_detector_2nd_pub.publish(r_detector_2nd);
 
 	// local_node_id = 2代表是备飞控，其他情况均认为是主飞控
-	if (r_detector_2nd.receive_interval >= 10_s*(local_node_id = 2 ? 2 : 1) && last_received_timestamp == 0)//增加备飞控检测阈值，确保主飞控先输出
+	if (use_me == 0 && r_detector_2nd.receive_interval >= 10_s*(local_node_id == 2 ? 2 : 1) && last_received_timestamp == 0)//增加备飞控检测阈值，确保主飞控先输出
 	{/* last_received_timestamp == 0表示从未检测到另一套飞控的控制指令，且超时30ms以上，那么本飞控开始输出控制指令 */
 	 /* 此if分支适用于 *主备两个飞控初次启动* 的情况 */
 		use_me = 1;
 		load_integater_param();
+		PX4_INFO("local_node_id %d", local_node_id);
+		if(local_node_id != 2){
+			mavlink_log_emergency(&_mavlink_log_pub, "Primary Ardupilot On");
+		}else{
+			mavlink_log_emergency(&_mavlink_log_pub, "Secondary Ardupilot On");
+		}
 	}
 
-	if (r_detector_2nd.receive_interval >= 30000 && last_received_timestamp != 0)
+	if (use_me == 0 && r_detector_2nd.receive_interval >= 30000 && last_received_timestamp != 0)
 	{/* 超时30ms以上，认为另一套飞控输出失效 */
-	 /* 中途断开CAN总线也会误触发这一if分支，导致两个飞控均在输出。如何避免？ */
+	 /* 中途断开CAN总线也会误触发这一if分支，导致两个飞控均在输出。如何避免？见下一组分支↓ */
 		use_me = 1;
 		load_integater_param();
+		if(local_node_id==2){
+			mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot lost, Secondary Pilot On");
+		}else{
+			mavlink_log_emergency(&_mavlink_log_pub, "Secondary Pilot lost, Primary Pilot On");
+		}
 	}
 
 	// 如果是备飞控，需要随时准备让位。否则可能会出现两个飞控同时输出的特殊情况。
 	// 此if分支目的是预防因CAN总线松动或其他时间抖动（同时飞控运行正常），进而导致两个飞控同时输出控制指令的问题, 此时两个飞控均为use_me=1，那么作为备飞控此时检测到对面数据就需要停止自己的输出
-	/** 注意：如果飞控宕机后自己重启并不会进入此分支，因为重启后的飞控能收到另外飞控的消息那么last_received_timestamp！=0 成立，
+	/**
+	 * 注意：如果飞控宕机后自己重启并不会进入此分支，因为重启后的飞控能收到另外飞控的消息那么last_received_timestamp！=0 成立，
 	 * 但是r_detector_2nd.receive_interval >= 30000不成立，所以重启后的飞控不会执行use_me=1的操作
 	 * */
-	if(local_node_id == 2 && r_detector_2nd.receive_interval < 30000 && last_received_timestamp != 0)
+	if(use_me == 1 && local_node_id == 2 && r_detector_2nd.receive_interval < 30000 && last_received_timestamp != 0)
 	{
 		use_me = 0;
 		zero_integater_param();
+		mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot On, Secondary Pilot Off.");
 	}
 
 	for(int i=0; i<_rotor_num; i++){
