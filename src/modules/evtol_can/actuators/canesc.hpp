@@ -168,9 +168,9 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 		load_integater_param();
 		PX4_INFO("local_node_id %d", local_node_id);
 		if(local_node_id != 2){
-			mavlink_log_emergency(&_mavlink_log_pub, "Primary Ardupilot On");
+			mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot On");
 		}else{
-			mavlink_log_emergency(&_mavlink_log_pub, "Secondary Ardupilot On");
+			mavlink_log_emergency(&_mavlink_log_pub, "Secondary Pilot On");
 		}
 	}
 
