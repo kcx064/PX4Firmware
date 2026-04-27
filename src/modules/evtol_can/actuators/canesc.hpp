@@ -31,6 +31,8 @@ public:
 		sinemotion_esc(sinemotion_esc_throttle_signature,8),
 		uavcan_esc(uavcan_esc_signature,8)
 	{
+		//启动初期都假设自己是备飞控
+		zero_integater_param();
 	}
 
 	~canesc() = default;
@@ -60,8 +62,6 @@ public:
 		_throttle_2_id |= node_id;
 		_uavcan_cmd_id |= node_id;
 		out_thr = _param_out_thr.get();
-		//启动初期都假设自己是备飞控
-		zero_integater_param();
 	}
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_PITCHRATE_I>) _param_mc_pitchrate_i,
