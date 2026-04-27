@@ -37,6 +37,10 @@ EvtolGpio::EvtolGpio() :
 	ModuleParams(nullptr),
 	ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::uavcan)
 {
+	#ifdef EVTOL_DB
+	#pragma message("Code under EVTOL_DB is being compiled.")
+			BMS_POWER_EN(_param_bms_en.get());
+	#endif
 }
 
 EvtolGpio::~EvtolGpio()
