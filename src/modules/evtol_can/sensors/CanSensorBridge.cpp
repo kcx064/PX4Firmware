@@ -5,6 +5,7 @@
 #include "servo_status.hpp"
 #include "bms_status.hpp"
 #include "redundancy_detector.hpp"
+#include "pmu_uavcan.hpp"
 
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
@@ -37,6 +38,13 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 	if (can_sub_redundency_detector != 0)
 	{
 		list.add(new redundancy_detector());
+	}
+
+	int32_t uavcan_sub_pmu = 1;
+	param_get(param_find("SUB_PMU"), &uavcan_sub_pmu);
+	if (uavcan_sub_pmu != 0)
+	{
+		list.add(new pmu_uavcan());
 	}
 
 

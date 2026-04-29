@@ -41,7 +41,7 @@ px4_add_module(
 		-DUAVCAN_CPP_VERSION=UAVCAN_CPP03
 		-DUAVCAN_STM32H7_NUTTX
 		-DUAVCAN_STM32H7_NUM_IFACES=2
-		-DMW_NUM_CAN_RECEIVE_RAW=39
+		-DMW_NUM_CAN_RECEIVE_RAW=45
 	SRCS
 		EvtolCan.cpp
 		EvtolCan.hpp
@@ -64,6 +64,7 @@ px4_add_module(
 		sensors/servo_status.hpp
 		sensors/bms_status.hpp
 		sensors/redundancy_detector.hpp
+		sensors/pmu_uavcan.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include

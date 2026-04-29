@@ -188,7 +188,18 @@ PARAM_DEFINE_INT32(SUB_FM_BATT, 0);
  * @value 1 Enable
  * @group DB
  */
-PARAM_DEFINE_INT32(SUB_REDU_DETEC, 0);
+PARAM_DEFINE_INT32(SUB_REDU_DETEC, 1);
+
+/**
+ * UAVCAN PMU Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_PMU, 0);
 
 /**
  * The Node ID used to distinguish between the primary and secondary autopilot
