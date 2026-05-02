@@ -126,6 +126,7 @@ esc_paramset::updateOutputs()
 		paramCfg.current_esc_id = current_node_id;
 		// paramCfg.uuid = 0x53A072D7;
 		paramCfg.tgt_esc_id = set_esc_node_id;
+		paramCfg.feedback_rate = 10;
 		paramCfg.priority_and_fixed_propeller = 0x02; //CAN优先级、定桨关闭
 		paramCfg.param_save = 0x01;
 
