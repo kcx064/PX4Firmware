@@ -44,8 +44,8 @@ public:
 	}
 
 	uint32_t msg_id_list[1]={
-		// (0x004E2E01)
-		(0x00040600)
+		// (0x004E2E01)//弦动电调
+		(0x00040600) //uavcan电调
 	};
 	uint8_t MSG_ID_COUNT = 1;
 private:

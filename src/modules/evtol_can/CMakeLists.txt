@@ -65,6 +65,8 @@ px4_add_module(
 		sensors/bms_status.hpp
 		sensors/redundancy_detector.hpp
 		sensors/pmu_uavcan.hpp
+		sensors/esc_status_uavcan.hpp
+		sensors/lib_uavcan_buffer.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include

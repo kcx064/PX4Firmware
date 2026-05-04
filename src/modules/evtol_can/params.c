@@ -147,6 +147,17 @@ PARAM_DEFINE_INT32(SUB_DCDC, 0);
 PARAM_DEFINE_INT32(SUB_SM_ESC, 0);
 
 /**
+ * UAVCAN ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_UAVCAN_ESC, 0);
+
+/**
  * IntelligenceGull ESC Subscribe
  *
  * @min 0

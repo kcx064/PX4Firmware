@@ -1,6 +1,7 @@
 #include "CanSensorBridge.hpp"
 #include "lib/parameters/param.h"
 #include "esc_status.hpp"
+#include "esc_status_uavcan.hpp"
 #include "dcdc_status.hpp"
 #include "servo_status.hpp"
 #include "bms_status.hpp"
@@ -47,6 +48,12 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 		list.add(new pmu_uavcan());
 	}
 
+	int32_t uavcan_sub_esc = 1;
+	param_get(param_find("SUB_UAVCAN_ESC"), &uavcan_sub_esc);
+	if (uavcan_sub_esc != 0)
+	{
+		list.add(new esc_status_uavcan());
+	}
 
 
 }
