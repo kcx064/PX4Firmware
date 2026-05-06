@@ -28,6 +28,10 @@ lib_uavcan_buffer::~lib_uavcan_buffer()
 {
 }
 
+/**
+ * @todo 应该能够返回最终的buffer实际长度
+ *
+*/
 uint8_t lib_uavcan_buffer::run(uint8_t *buffer, uint8_t *rxData, uint8_t len)
 {
 	switch (_sub_state)//这个状态机逻辑 与 src/modules/evtol_can/actuators/lib_uavcan_packager.hpp 的目标正好相反， 用于将连续帧转换为
