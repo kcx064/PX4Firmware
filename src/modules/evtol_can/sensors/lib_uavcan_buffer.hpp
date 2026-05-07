@@ -29,7 +29,11 @@ lib_uavcan_buffer::~lib_uavcan_buffer()
 }
 
 /**
- * @todo 应该能够返回最终的buffer实际长度
+ * @brief 每次收到一帧UAVCAN消息的时候，运行该方法。并在连续帧接收完毕时候，返回有效buffer长度。否则返回0
+ * @param buffer 存储接收有效数据的缓存指针
+ * @param rxDate 物理CAN设备每次收到的消息缓存
+ * @param len 物理CAN设备每次都到的消息缓存 rxDate 的有效长度
+ * @return 读取完毕时，返回buffer中的有效长度buff_len。否则返回0
  *
 */
 uint8_t lib_uavcan_buffer::run(uint8_t *buffer, uint8_t *rxData, uint8_t len)
@@ -48,7 +52,7 @@ uint8_t lib_uavcan_buffer::run(uint8_t *buffer, uint8_t *rxData, uint8_t len)
 				memcpy(&buffer[buff_len], &rxData[0], len - 1);
 				buff_len = len - 1;
 				// PX4_INFO("pmu start_end msg");
-				return 1;
+				return buff_len;
 			}else{}
 
 			break;
@@ -70,7 +74,7 @@ uint8_t lib_uavcan_buffer::run(uint8_t *buffer, uint8_t *rxData, uint8_t len)
 				}
 
 				// PX4_INFO("pmu end msg");
-				return 1;
+				return buff_len;
 
 			}else{}
 			break;
