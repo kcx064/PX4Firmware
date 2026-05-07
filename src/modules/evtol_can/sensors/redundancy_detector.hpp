@@ -1,6 +1,8 @@
 #include "CanSensorBridge.hpp"
 
+
 #include <uORB/topics/redundancy_detector.h>
+#include <stdint.h>
 #include "lib_uavcan_buffer.hpp"
 
 class redundancy_detector : public CanSensorBridgeBase, public ModuleParams
@@ -66,12 +68,20 @@ private:
 		uint8_t byte[4];
 	}field_u;
 
+	#pragma pack(push, 1)
 	typedef struct uavcan_field_info
 	{
 		uint8_t bit_width;
 		uint32_t field_val;
 	}uavcan_field_info_s;
-	uavcan_field_info_s field_info_s[4] = {};
+	#pragma pack(pop)
+
+	uavcan_field_info_s _field_info[4] = {
+		{14,0},
+		{14,0},
+		{14,0},
+		{14,0}
+	};
 
 	//uorb消息相关定义
 	redundancy_detector_s _redundancy_detector{};
@@ -115,7 +125,7 @@ void redundancy_detector::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rx
 		if(_uavcan_buffer.run(buffer, rxData, len))
 		{//读取完毕uavcan连续帧中的消息，存储在buffer中
 			uint16_t bit_pos_start = 0;
-			for(uint16_t i = 0; i<sizeof(raw_cmd_struct); i++)//TODO 这部分同样整理成为类
+			for(uint16_t i = 0; i<sizeof(_field_info)/sizeof(uavcan_field_info_s); i++)//TODO 这部分同样整理成为类
 			{
 				//每次运行下面函数，都能够得到目标数据的值，存储在一个uint32的变量中
 				/**
@@ -123,11 +133,12 @@ void redundancy_detector::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rx
 				 * @param bit_pos_start bit起始位置
 				 * @param raw_cmd_struct 当前目标数据的bit宽度，需要用户提前定义好每个数据宽度，以数组的形式提供
 				*/
-				uavcan_get_value(buffer, bit_pos_start, raw_cmd_struct[i]);//TODO 处理返回值
-				bit_pos_start += raw_cmd_struct[i];
+				_field_info[i].field_val = uavcan_get_value(buffer, bit_pos_start, _field_info[i].bit_width);
+				bit_pos_start += _field_info[i].bit_width;
 			}
 
 		}
+		//发布接收到的电机油门，并在另外的地方增加平滑过渡逻辑
 
 		//发布消息
 		_redundancy_detector.timestamp = hrt_absolute_time();
