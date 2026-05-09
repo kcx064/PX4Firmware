@@ -7,6 +7,7 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/topics/esc_status.h>
+#include <uORB/topics/can_esc_status.h>
 
 #include "lib_uavcan_buffer.hpp"
 
@@ -103,6 +104,9 @@ private:
 	esc_status_s					_esc_status{};
 	uORB::PublicationMulti<esc_status_s> 		_esc_status_pub{ORB_ID(esc_status)};
 
+	can_esc_status_s				_can_esc_status{};
+	uORB::PublicationMulti<can_esc_status_s> 	_can_esc_status_pub{ORB_ID(can_esc_status)};
+
 	int32_t rotor_num{esc_status_s::CONNECTED_ESC_MAX};
 	uORB::SubscriptionInterval	_parameter_update_sub{ORB_ID(parameter_update), 1_s};  // subscription limited to 1 Hz updates
 	// Parameters
@@ -115,7 +119,7 @@ private:
 
 };
 
-const char *const esc_status_uavcan::NAME = "Template";
+const char *const esc_status_uavcan::NAME = "ESC_STATUS";
 constexpr uint32_t esc_status_uavcan::msg_id_list[];
 constexpr size_t esc_status_uavcan::MSG_ID_COUNT;
 
@@ -150,8 +154,9 @@ void esc_status_uavcan::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxDa
 
 	//用于存储uorb消息数据
 	auto &ref = _esc_status.esc[esc_index];
+	auto &can_ref = _can_esc_status.can_esc[esc_index];
 
-	//方案一 如果接收到结束帧，那么if中返回1则执行if分支，否则不执行
+	//如果接收到结束帧，那么if中返回1则执行if分支，否则不执行
 	if(_uavcan_buffer[esc_index].run(_esc_status_msg[esc_index].buffer, rxData, len))
 	{
 		// 这里数据全部拷贝完毕，位于 _esc_status_msg[esc_index] 中
@@ -160,7 +165,13 @@ void esc_status_uavcan::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxDa
 		ref.esc_rpm = (_esc_status_msg[esc_index].buffer1) + (_esc_status_msg[esc_index].buffer2 << 8) + ((_esc_status_msg[esc_index].buffer3 & 0b11000000) << 10);
 		ref.esc_voltage = static_cast<float_t>(float16_to_float32(_esc_status_msg[esc_index].voltage));
 		ref.esc_current = static_cast<float_t>(float16_to_float32(_esc_status_msg[esc_index].current));
-		ref.esc_temperature = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature));
+		ref.esc_temperature = static_cast<float_t>(float16_to_float32(_esc_status_msg[esc_index].temperature) - 273.15f);
+
+		can_ref.esc_index = esc_index;
+		can_ref.t_mos = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature) - 273.15f);
+		can_ref.t_cap = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature) - 273.15f);
+		can_ref.t_mcu = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature) - 273.15f);
+		can_ref.t_module = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature) - 273.15f);
 
 		//每更新一个电调都推送一次，此时意味着其他电调的状态是旧的
 		_esc_status.esc_count = rotor_num;
@@ -170,71 +181,15 @@ void esc_status_uavcan::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxDa
 		_esc_status.esc_armed_flags = (1 << rotor_num) - 1;
 		_esc_status.timestamp = hrt_absolute_time();
 		_esc_status_pub.publish(_esc_status);
+
+		_can_esc_status.esc_count = rotor_num;
+		_can_esc_status.counter += 1;
+		// _can_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
+		_can_esc_status.esc_online_flags = check_escs_status();
+		_can_esc_status.esc_armed_flags = (1 << rotor_num) - 1;
+		_can_esc_status.timestamp = hrt_absolute_time();
+		_can_esc_status_pub.publish(_can_esc_status);
 	}
-
-	// //方案二
-	// switch (_sub_state[esc_index])//这个状态机逻辑可以改编为一个专门的类 与 src/modules/evtol_can/actuators/lib_uavcan_packager.hpp 的目标正好相反
-	// {
-	// 	case sub_state::IDLE:
-	// 		if ( (rxData[len-1] >> 6) == 2 ) { //仅起始帧
-	// 			_sub_state[esc_index] = sub_state::START_FRAME;
-	// 			memcpy(&_esc_status_msg[esc_index].buffer[buff_len], &rxData[2], 5);
-	// 			buff_len = 5;
-	// 			// PX4_INFO("pmu start msg");
-
-	// 		} else if ((rxData[len-1] >> 6) == 3) { //起始帧 + 结束帧
-	// 			_sub_state[esc_index] = sub_state::IDLE;
-	// 			memcpy(&_esc_status_msg[esc_index].buffer[buff_len], &rxData[0], len - 1);
-	// 			buff_len = len - 1;
-	// 			// PX4_INFO("pmu start_end msg");
-	// 		}else{}
-
-	// 		break;
-
-	// 	case sub_state::START_FRAME:
-	// 		if ((rxData[len-1] >> 6) == 0) { //中间帧
-	// 			// _sub_state[esc_index] = sub_state::START_FRAME;
-	// 			if(buff_len+7 <= buff_len_max){
-	// 				memcpy(&_esc_status_msg[esc_index].buffer[buff_len], &rxData[0], 7);
-	// 				buff_len += 7;
-	// 			}
-	// 			// PX4_INFO("pmu mid msg");
-
-	// 		} else if ( (rxData[len-1] >> 6) == 1 ) { //仅结束帧
-	// 			_sub_state[esc_index] = sub_state::IDLE;
-	// 			if(buff_len + len - 1 <= buff_len_max){
-	// 				memcpy(&_esc_status_msg[esc_index].buffer[buff_len], &rxData[0], len - 1);
-	// 				buff_len += (len - 1);
-	// 			}
-	// 			// 这里数据全部拷贝完毕，位于 _esc_status_msg[esc_index] 中
-	// 			ref.timestamp = hrt_absolute_time();
-	// 			ref.esc_errorcount  = 0;
-	// 			ref.esc_rpm = (_esc_status_msg[esc_index].buffer1) + (_esc_status_msg[esc_index].buffer2 << 8) + ((_esc_status_msg[esc_index].buffer3 & 0b11000000) << 10);
-	// 			ref.esc_voltage = static_cast<float_t>(float16_to_float32(_esc_status_msg[esc_index].voltage));
-	// 			ref.esc_current = static_cast<float_t>(float16_to_float32(_esc_status_msg[esc_index].current));
-	// 			ref.esc_temperature = static_cast<int16_t>(float16_to_float32(_esc_status_msg[esc_index].temperature));
-
-	// 			//每更新一个电调都推送一次，此时意味着其他电调的状态是旧的
-	// 			_esc_status.esc_count = rotor_num;
-	// 			_esc_status.counter += 1;
-	// 			_esc_status.esc_connectiontype = esc_status_s::ESC_CONNECTION_TYPE_CAN;
-	// 			_esc_status.esc_online_flags = check_escs_status();
-	// 			_esc_status.esc_armed_flags = (1 << rotor_num) - 1;
-	// 			_esc_status.timestamp = hrt_absolute_time();
-	// 			_esc_status_pub.publish(_esc_status);
-
-	// 			// PX4_INFO("pmu end msg");
-
-	// 		}else{}
-	// 		break;
-
-	// 	default:
-	// 		PX4_INFO("default: %d", rxData[len-1] >> 6);
-	// 		_sub_state[esc_index] = sub_state::IDLE;
-	// 		break;
-	// }
-
-
 }
 
 uint8_t esc_status_uavcan::check_escs_status()

@@ -108,7 +108,6 @@ void pmu_uavcan::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 	_CANModule = canModule;
 	//msg_id_list仅仅考虑一个消息id，这里不需要根据id分类。
 
-	//方案一：
 	if(_uavcan_buffer.run(_pmu_msg.buffer, rxData, len))
 	{
 		_battery.setConnected(true);
@@ -116,62 +115,6 @@ void pmu_uavcan::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uin
 		_battery.updateCurrent(float16_to_float32(_pmu_msg.current));
 		_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
 	}
-
-	// // 方案二：
-	// switch (_sub_state)
-	// {
-	// 	case sub_state::IDLE:
-	// 		if ( (rxData[len-1] >> 6) == 2 ) { //仅起始帧
-	// 			_sub_state = sub_state::START_FRAME;
-	// 			memcpy(&_pmu_msg.buffer[buff_len], &rxData[2], 5);
-	// 			buff_len = 5;
-	// 			// PX4_INFO("pmu start msg");
-
-	// 		} else if ((rxData[len-1] >> 6) == 3) { //起始帧 + 结束帧
-	// 			_sub_state = sub_state::IDLE;
-	// 			memcpy(&_pmu_msg.buffer[buff_len], &rxData[0], len - 1);
-	// 			buff_len = len - 1;
-	// 			// PX4_INFO("pmu start_end msg");
-	// 		}else{}
-
-	// 		break;
-
-	// 	case sub_state::START_FRAME:
-	// 		if ((rxData[len-1] >> 6) == 0) { //中间帧
-	// 			// _sub_state = sub_state::START_FRAME;
-	// 			if(buff_len+7 <= buff_len_max){
-	// 				memcpy(&_pmu_msg.buffer[buff_len], &rxData[0], 7);
-	// 				buff_len += 7;
-	// 			}
-	// 			// PX4_INFO("pmu mid msg");
-
-	// 		} else if ( (rxData[len-1] >> 6) == 1 ) { //仅结束帧
-	// 			_sub_state = sub_state::IDLE;
-	// 			if(buff_len + len - 1 <= buff_len_max){
-	// 				memcpy(&_pmu_msg.buffer[buff_len], &rxData[0], len - 1);
-	// 				buff_len += (len - 1);
-	// 			}
-
-	// 			_battery.setConnected(true);
-	// 			_battery.updateVoltage(float16_to_float32(_pmu_msg.voltage));
-	// 			_battery.updateCurrent(float16_to_float32(_pmu_msg.current));
-	// 			_battery.updateAndPublishBatteryStatus(hrt_absolute_time());
-	// 			// PX4_INFO("pmu end msg");
-
-	// 		} else if ((rxData[len-1] >> 6) == 2) { //仅起始帧
-	// 			_sub_state = sub_state::START_FRAME;
-	// 			memcpy(&_pmu_msg.buffer[buff_len], &rxData[2], 5);
-	// 			buff_len = 5;
-	// 			// PX4_INFO("pmu start msg");
-
-	// 		} else{}
-	// 		break;
-
-	// 	default:
-	// 		PX4_INFO("default: %d", rxData[len-1] >> 6);
-	// 		_sub_state = sub_state::IDLE;
-	// 		break;
-	// }
 }
 
 float pmu_uavcan::float16_to_float32(uint16_t f)
