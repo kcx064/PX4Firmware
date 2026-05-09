@@ -1,6 +1,14 @@
 #pragma once
 #include <cstdint>
 
+#pragma pack(push, 1)
+typedef struct uavcan_field_info
+{
+	uint8_t bit_width;
+	uint32_t field_val;
+}uavcan_field_info_s;
+#pragma pack(pop)
+
 class lib_uavcan_field_extractor
 {
 private:
@@ -13,19 +21,36 @@ private:
 		uint8_t byte[4];
 	}field_u;
 	uint8_t uavcan_get_bit(uint8_t *recv_buffer, uint8_t buffer_len, uint16_t bit_pos);
-public:
-	lib_uavcan_field_extractor(/* args */);
-	~lib_uavcan_field_extractor();
-
 	uint32_t uavcan_get_value(uint8_t *recv_buffer, uint8_t buffer_len, uint16_t start_bit_pos, uint8_t bit_width);
+
+	uavcan_field_info_s *field_info;
+	uint8_t field_info_size;
+
+public:
+	lib_uavcan_field_extractor(uavcan_field_info_s *_field_info, uint8_t _field_info_size);
+	~lib_uavcan_field_extractor() = default;
+	void uavcan_get_values(uint8_t *buff, uint8_t buffer_len);
 };
 
-lib_uavcan_field_extractor::lib_uavcan_field_extractor(/* args */)
-{
-}
+lib_uavcan_field_extractor::lib_uavcan_field_extractor(uavcan_field_info_s *_field_info, uint8_t _field_info_size) :
+	field_info{_field_info},
+	field_info_size{_field_info_size}
+{}
 
-lib_uavcan_field_extractor::~lib_uavcan_field_extractor()
+void lib_uavcan_field_extractor::uavcan_get_values(uint8_t *buff, uint8_t buffer_len)
 {
+	uint16_t bit_pos_start = 0;
+	for(uint16_t i = 0; i<field_info_size; i++)
+	{
+		//每次运行下面函数，都能够得到目标数据的值，存储在一个uint32的变量中
+		/**
+		 * @param buff 已经保存了消息原始数据的数组，不含CRC和尾字节部分
+		 * @param bit_pos_start bit起始位置
+		 * @param raw_cmd_struct 当前目标数据的bit宽度，需要用户提前定义好每个数据宽度，以数组的形式提供
+		*/
+		field_info[i].field_val = uavcan_get_value(buff, buffer_len, bit_pos_start, field_info[i].bit_width);
+		bit_pos_start += field_info[i].bit_width;
+	}
 }
 
 /**
