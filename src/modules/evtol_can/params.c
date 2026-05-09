@@ -308,3 +308,12 @@ PARAM_DEFINE_FLOAT(B_Z_VEL_I_ACC, 2.0);
  * @reboot_required true
  */
 PARAM_DEFINE_INT32(OUT_THR, 1);
+
+/**
+ * lambda step
+ *
+ * @min 0
+ * @max 1
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(LAMBDA_STEP, 0.025);

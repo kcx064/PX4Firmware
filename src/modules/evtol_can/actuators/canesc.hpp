@@ -62,6 +62,7 @@ public:
 		_throttle_2_id |= node_id;
 		_uavcan_cmd_id |= node_id;
 		out_thr = _param_out_thr.get();
+		lambda_step = _param_lambda_step.get();
 	}
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_PITCHRATE_I>) _param_mc_pitchrate_i,
@@ -76,7 +77,8 @@ public:
 		(ParamFloat<px4::params::B_XY_VEL_I_ACC>) _param_b_xy_vel_i_acc,
 		(ParamFloat<px4::params::B_Z_VEL_I_ACC>) _param_b_z_vel_i_acc,
 
-		(ParamInt<px4::params::OUT_THR>) _param_out_thr
+		(ParamInt<px4::params::OUT_THR>) _param_out_thr,
+		(ParamFloat<px4::params::LAMBDA_STEP>) _param_lambda_step
 	)
 
 private:
@@ -100,7 +102,14 @@ private:
 
 	uORB::Subscription		_redundancy_detector_sub{ORB_ID(redundancy_detector)};
 
+	redundancy_detector_s 		r_detector;
+
+	float_t lambda{0.0f};
+	float_t lambda_step{0.0f};
+
 	hrt_abstime last_received_timestamp{0};
+
+	void labmda_step();
 
 	void load_integater_param(){
 		_param_mc_pitchrate_i.set(_param_b_pitchrate_i.get());
@@ -148,8 +157,6 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	_debug_pub.publish(debug_value);
 
 	if (_redundancy_detector_sub.updated()) {
-
-		redundancy_detector_s r_detector;
 		_redundancy_detector_sub.copy(&r_detector);
 		last_received_timestamp = hrt_absolute_time();
 	}
@@ -178,6 +185,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	{/* 超时30ms以上，认为另一套飞控输出失效 */
 	 /* 中途断开CAN总线也会误触发这一if分支，导致两个飞控均在输出。如何避免？见下一组分支↓ */
 		use_me = 1;
+		lambda = 1.0f;//当本飞控在飞行中触发接管的时候，lambda置1，使能平滑过渡
 		load_integater_param();
 		if(local_node_id==2){
 			mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot lost, Secondary Pilot On");
@@ -201,9 +209,14 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 
 	for(int i=0; i<_rotor_num; i++){
 		sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
+		// uavcan_esc.add_esc_cmd( (1.0f - lambda)*outputs[i] + lambda*r_detector.raw_command[i]); //这行代码需要改进，否则在切换的时候会导致备飞控重启
 		uavcan_esc.add_esc_cmd(outputs[i]);
 	}
 
+	labmda_step();//lambda逐步递减
+
+
+	//执行发送操作
 	uint8_t esc_msg_data[8] = {0,};
 	uint8_t len = 0;
 	while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
@@ -227,5 +240,11 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 
 	sinemotion_esc.clear_esc_cmds();
 	uavcan_esc.clear_esc_cmds();
+}
+
+void canesc::labmda_step()
+{
+	lambda = lambda - lambda_step;
+	if(lambda<0)lambda=0.0f;
 }
 
