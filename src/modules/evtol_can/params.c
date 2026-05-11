@@ -22,7 +22,7 @@ PARAM_DEFINE_FLOAT(BAT_CELL_V, 22.5f);
  * @value 1250 800Hz
  * @reboot_required true
  */
-PARAM_DEFINE_INT32(CANRVE_INTERVAL, 10000);
+PARAM_DEFINE_INT32(CANRVE_INTERVAL, 5000);
 
 /**
  * DB Servo Bias
@@ -298,7 +298,7 @@ PARAM_DEFINE_FLOAT(B_XY_VEL_I_ACC, 0.4);
 PARAM_DEFINE_FLOAT(B_Z_VEL_I_ACC, 2.0);
 
 /**
- * When set t-motor esc param, please disable throttle output
+ * When set t-motor esc param (such as esc ID), please disable throttle output for safety
  *
  * @min 0
  * @max 1

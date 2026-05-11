@@ -53,6 +53,7 @@ public:
 	}
 
 	uint8_t use_me{0};
+	uint8_t do_not_use_me{0};
 	/*
 	 * 根据local_node_id更新消息id的节点id部分
 	*/
@@ -103,6 +104,8 @@ private:
 	uORB::Subscription		_redundancy_detector_sub{ORB_ID(redundancy_detector)};
 
 	redundancy_detector_s 		r_detector;
+
+	int16_t 			secondary_counter{0};
 
 	float_t lambda{0.0f};
 	float_t lambda_step{0.0f};
@@ -181,7 +184,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 		}
 	}
 
-	if (use_me == 0 && r_detector_2nd.receive_interval >= 30_ms && last_received_timestamp != 0)
+	if (do_not_use_me==0 && use_me == 0 && r_detector_2nd.receive_interval >= 30_ms && last_received_timestamp != 0)
 	{/* 超时30ms以上，认为另一套飞控输出失效 */
 	 /* 中途断开CAN总线也会误触发这一if分支，导致两个飞控均在输出。如何避免？见下一组分支↓ */
 		use_me = 1;
@@ -197,8 +200,8 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	// 如果是备飞控，需要随时准备让位。否则可能会出现两个飞控同时输出的特殊情况。
 	// 此if分支目的是预防因CAN总线松动或其他时间抖动（同时飞控运行正常），进而导致两个飞控同时输出控制指令的问题, 此时两个飞控均为use_me=1，那么作为备飞控此时检测到对面数据就需要停止自己的输出
 	/**
-	 * 注意：如果飞控宕机后自己重启并不会进入此分支，因为重启后的飞控能收到另外飞控的消息那么last_received_timestamp！=0 成立，
-	 * 但是r_detector_2nd.receive_interval >= 30_ms 不成立，所以重启后的飞控不会执行use_me=1的操作
+	 * 注意：如果飞控宕机后自己重启并不会进入此分支，因为重启后的飞控能收到另外飞控的消息那么 last_received_timestamp != 0 成立，
+	 * 但是 r_detector_2nd.receive_interval >= 30_ms 不成立，所以重启后的飞控不会执行 use_me=1 的操作
 	 * */
 	if(use_me == 1 && local_node_id == 2 && r_detector_2nd.receive_interval < 30_ms && last_received_timestamp != 0)
 	{
@@ -207,10 +210,30 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 		mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot On, Secondary Pilot Off.");
 	}
 
+	/** @brief 主飞控自我反省机制
+	 * 主飞控供电不足的时候，运行正常但是存在降频问题，此时控制信号输出频率降低，会导致备飞控反复接管、出让控制权。
+	 * 解决方案：由主飞控在 use_me==1 的前提下，主飞控边输出边能收到备飞控的输出指令，说明主飞控自己有问题
+	 */
+	if(use_me == 1 && local_node_id != 2 && last_received_timestamp != 0)
+	{
+		if(r_detector_2nd.receive_interval < 30_ms)
+		{
+			secondary_counter += 2;
+		}else{
+			if(secondary_counter>0) secondary_counter-=0;
+		}
+		if(secondary_counter>5){
+			do_not_use_me = 1;
+			use_me = 0;
+			zero_integater_param();
+			mavlink_log_emergency(&_mavlink_log_pub, "Primary Pilot Unstable");
+		}
+	}
+
 	for(int i=0; i<_rotor_num; i++){
 		sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
-		// uavcan_esc.add_esc_cmd( (1.0f - lambda)*outputs[i] + lambda*r_detector.raw_command[i]); //这行代码需要改进，否则在切换的时候会导致备飞控重启
-		uavcan_esc.add_esc_cmd(outputs[i]);
+		uavcan_esc.add_esc_cmd( static_cast<uint16_t>((1.0f - lambda)*static_cast<float_t>(outputs[i]) + lambda*static_cast<float_t>(r_detector.raw_command[i]))  );
+		// uavcan_esc.add_esc_cmd(outputs[i]);
 	}
 
 	labmda_step();//lambda逐步递减
