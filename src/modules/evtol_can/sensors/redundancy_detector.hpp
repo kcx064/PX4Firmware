@@ -104,7 +104,6 @@ void redundancy_detector::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rx
 	{
 		if(_uavcan_parser.run(rxData, len))
 		{
-			/** @todo 并在另外的地方增加平滑过渡逻辑 */
 			_redundancy_detector.raw_command[0] = _field_info[0].field_val;
 			_redundancy_detector.raw_command[1] = _field_info[1].field_val;
 			_redundancy_detector.raw_command[2] = _field_info[2].field_val;

@@ -233,6 +233,7 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	for(int i=0; i<_rotor_num; i++){
 		sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
 		uavcan_esc.add_esc_cmd( static_cast<uint16_t>((1.0f - lambda)*static_cast<float_t>(outputs[i]) + lambda*static_cast<float_t>(r_detector.raw_command[i]))  );
+		// @todo 注意未来拓展旋翼数量时r_detector.raw_command[i]数组越界
 		// uavcan_esc.add_esc_cmd(outputs[i]);
 	}
 
