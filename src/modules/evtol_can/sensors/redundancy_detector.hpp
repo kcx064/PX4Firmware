@@ -84,7 +84,7 @@ const char *const redundancy_detector::NAME = "REDUNDANCY_DETECTOR";
 
 int redundancy_detector::init()
 {
-	if(_evtol_node_id.get() == 1)
+	if(_evtol_node_id.get() == 1)//@todo 注意备飞控id!=2（id!=2就会认为是备飞控）的时候，这里会暂时失效。id!=2的情况仅供调试
 	{
 		//如果节点id==1，本飞控是主飞控，那么需要监听备飞控的控制输出,这里要求备飞控的node id == 2
 		msg_id_list[0] |= 0x02;

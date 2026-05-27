@@ -224,6 +224,19 @@ PARAM_DEFINE_INT32(SUB_PMU, 0);
 PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
 
 /**
+ * ESC type
+ *
+ * Select one type of esc, for different esc
+ *
+ * @min 0
+ * @max 9
+ * @value 0 Sinemotion
+ * @value 1 UAVCAN_ESC
+ * @group DB
+ */
+PARAM_DEFINE_INT32(ESC_TYPE, 0);
+
+/**
  * Current Local node id of t-motor esc
  *
  * @min 0

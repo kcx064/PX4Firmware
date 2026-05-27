@@ -64,6 +64,7 @@ public:
 		_uavcan_cmd_id |= node_id;
 		out_thr = _param_out_thr.get();
 		lambda_step = _param_lambda_step.get();
+		esc_type = _param_esc_type.get();
 	}
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_PITCHRATE_I>) _param_mc_pitchrate_i,
@@ -79,7 +80,8 @@ public:
 		(ParamFloat<px4::params::B_Z_VEL_I_ACC>) _param_b_z_vel_i_acc,
 
 		(ParamInt<px4::params::OUT_THR>) _param_out_thr,
-		(ParamFloat<px4::params::LAMBDA_STEP>) _param_lambda_step
+		(ParamFloat<px4::params::LAMBDA_STEP>) _param_lambda_step,
+		(ParamInt<px4::params::ESC_TYPE>) _param_esc_type
 	)
 
 private:
@@ -94,6 +96,7 @@ private:
 	uint8_t 			local_node_id{0};
 
 	uint8_t 			out_thr{1};
+	uint8_t 			esc_type{0};
 
 	orb_advert_t 			_mavlink_log_pub{nullptr};
 
@@ -243,27 +246,30 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 	//执行发送操作
 	uint8_t esc_msg_data[8] = {0,};
 	uint8_t len = 0;
-	while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
-	{
-		// if(use_me && out_thr){/*对于主飞控，enable_backup默认为1，备份飞控默认为0，当备飞控检测到主飞控异常后，enable_backup会变为1 */
-		// 	if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len))
-		// 	{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
-		// 		_h7can_device.transmitMessage(!_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len);
-		// 	}
-		// }
-	}
-
-	while(!uavcan_esc.get_package(&esc_msg_data[0], &len)){
-		if(use_me && out_thr){/*对于主飞控，enable_backup默认为1，备份飞控默认为0，当备飞控检测到主飞控异常后，enable_backup会变为1 */
-			if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _uavcan_cmd_id, 1, 0, len))
-			{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
-				_h7can_device.transmitMessage(!_CANModule, &esc_msg_data[0], _uavcan_cmd_id, 1, 0, len);
+	if(esc_type==0){
+		/** sinemotion esc */
+		while (!sinemotion_esc.get_package(&esc_msg_data[0], &len))
+		{
+			if(use_me && out_thr){
+				if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len))
+				{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
+					_h7can_device.transmitMessage(!_CANModule, &esc_msg_data[0], _throttle_2_id, 1, 0, len);
+				}
 			}
 		}
+		sinemotion_esc.clear_esc_cmds();
+	}else if(esc_type==1){
+		/** uavcan esc */
+		while(!uavcan_esc.get_package(&esc_msg_data[0], &len)){
+			if(use_me && out_thr){
+				if(_h7can_device.transmitMessage(_CANModule, &esc_msg_data[0], _uavcan_cmd_id, 1, 0, len))
+				{/* _CANModule 为0或者1， 如果当前通道发送失败就向另一个通道发送， 即当前的否值， !0 = 1  !1=0*/
+					_h7can_device.transmitMessage(!_CANModule, &esc_msg_data[0], _uavcan_cmd_id, 1, 0, len);
+				}
+			}
+		}
+		uavcan_esc.clear_esc_cmds();
 	}
-
-	sinemotion_esc.clear_esc_cmds();
-	uavcan_esc.clear_esc_cmds();
 }
 
 void canesc::labmda_step()
