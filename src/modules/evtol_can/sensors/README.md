@@ -31,7 +31,7 @@ void sensor_template::msg_cb(uint32_t msg_id, uint8_t *rxData, uint8_t len)
 用户应使用
 类lib_uavcan_parser(src/modules/evtol_can/sensors/lib_uavcan_parser.hpp)来完成。
 
-类`lib_uavcan_parser`基于类`lib_uavcan_buffer`(src/modules/evtol_can/sensors/lib_uavcan_buffer.hpp)和`lib_uavcan_field_extractor`(src/modules/evtol_can/sensors/lib_uavcan_field_extractor.hpp)实现。
+类**lib_uavcan_parser**基于类**lib_uavcan_buffer**(src/modules/evtol_can/sensors/lib_uavcan_buffer.hpp)和**lib_uavcan_field_extractor**(src/modules/evtol_can/sensors/lib_uavcan_field_extractor.hpp)实现。
 
 具体应用代码参考src/modules/evtol_can/sensors/redundancy_detector.hpp中的实现。
 里面实现对raw_command消息的解析，这个消息是飞控发给电调的油门数据，每个油门使用uint14来表示，按照uavcan方式紧凑排列。

@@ -233,6 +233,7 @@ PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
  * @value 0 Sinemotion
  * @value 1 UAVCAN_ESC
  * @group DB
+ * @reboot_required true
  */
 PARAM_DEFINE_INT32(ESC_TYPE, 0);
 
