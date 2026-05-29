@@ -1,0 +1,5 @@
+menuconfig MODULES_EVTOL_JOYSTICK
+	bool "evtol_joystick"
+	default n
+	---help---
+		Enable support for evtol_joystick
