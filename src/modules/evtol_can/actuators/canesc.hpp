@@ -235,7 +235,9 @@ canesc::update_outputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS], unsign
 
 	for(int i=0; i<_rotor_num; i++){
 		if(esc_type==0){
-			sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
+			sinemotion_esc.add_esc_cmd(0x20+i,
+				static_cast<uint16_t>((1.0f - lambda)*static_cast<float_t>(outputs[i]) + lambda*static_cast<float_t>(r_detector.raw_command[i])));
+			// sinemotion_esc.add_esc_cmd(0x20+i,outputs[i]);
 		}else if(esc_type==1){
 			uavcan_esc.add_esc_cmd( static_cast<uint16_t>((1.0f - lambda)*static_cast<float_t>(outputs[i]) + lambda*static_cast<float_t>(r_detector.raw_command[i]))  );
 			// uavcan_esc.add_esc_cmd(outputs[i]);
