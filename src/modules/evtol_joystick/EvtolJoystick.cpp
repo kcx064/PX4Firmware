@@ -173,5 +173,12 @@ Example of a simple module running out of a work queue.
 
 extern "C" __EXPORT int evtol_joystick_main(int argc, char *argv[])
 {
-	return EvtolJoystick::main(argc, argv);
+	int32_t rc_port_config = 0;
+	(void)param_get(param_find("RC_PORT_CONFIG"), &rc_port_config);
+	if(rc_port_config){
+		return EvtolJoystick::main(argc, argv);
+	}else{
+		return 0;
+	}
+
 }
