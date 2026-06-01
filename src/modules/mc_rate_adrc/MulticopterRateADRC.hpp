@@ -60,6 +60,8 @@
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/vehicle_torque_setpoint.h>
 
+#include "lib_ladrc.hpp"
+
 using namespace time_literals;
 
 class MulticopterRateADRC : public ModuleBase<MulticopterRateADRC>, public ModuleParams, public px4::WorkItem
@@ -90,6 +92,10 @@ private:
 	void updateActuatorControlsStatus(const vehicle_torque_setpoint_s &vehicle_torque_setpoint, float dt);
 
 	RateControl _rate_control; ///< class for rate control calculations
+	lib_ladrc adrc_roll;
+	float_t bw_ctl;
+	float_t bw_obs;
+	float_t gain_b;
 
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 	uORB::Subscription _control_allocator_status_sub{ORB_ID(control_allocator_status)};
@@ -161,6 +167,7 @@ private:
 
 		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en,
 		(ParamFloat<px4::params::ADRC_BW_O>) _param_adrc_bw_obs,
-		(ParamFloat<px4::params::ADRC_BW_C>) _param_adrc_bw_ctl
+		(ParamFloat<px4::params::ADRC_BW_C>) _param_adrc_bw_ctl,
+		(ParamFloat<px4::params::ADRC_B>) _param_adrc_b
 	)
 };

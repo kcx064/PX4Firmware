@@ -68,13 +68,20 @@ MulticopterRateADRC::init()
 		PX4_ERR("callback registration failed");
 		return false;
 	}
-
+	// ladrc init
+	adrc_roll.init(500.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0025f, 1.0f, 0.0f, 3.0f, 0.0f);
 	return true;
 }
 
 void
 MulticopterRateADRC::parameters_updated()
 {
+	//update ladrc params
+	bw_ctl = _param_adrc_bw_ctl.get();
+	bw_obs = _param_adrc_bw_obs.get();
+	gain_b = _param_adrc_b.get();
+	adrc_roll.param_update(2*bw_obs, bw_obs*bw_obs, bw_ctl, gain_b);
+
 	// rate control parameters
 	// The controller gain K is used to convert the parallel (P + I/s + sD) form
 	// to the ideal (K * [1 + 1/sTi + sTd]) form
@@ -215,6 +222,7 @@ MulticopterRateADRC::Run()
 
 			// run rate controller
 			const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
+			float_t adrc_control = adrc_roll.calc(_rates_setpoint(0), rates(0));
 
 			// publish rate controller status
 			rate_ctrl_status_s rate_ctrl_status{};
@@ -227,7 +235,8 @@ MulticopterRateADRC::Run()
 			vehicle_torque_setpoint_s vehicle_torque_setpoint{};
 
 			_thrust_setpoint.copyTo(vehicle_thrust_setpoint.xyz);
-			vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(att_control(0)) ? att_control(0) : 0.f;
+			// vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(att_control(0)) ? att_control(0) : 0.f;
+			vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(adrc_control) ? adrc_control : 0.f; //ladrc
 			vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
 			vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.f;
 
@@ -337,7 +346,7 @@ int MulticopterRateADRC::print_usage(const char *reason)
 This implements the multicopter rate controller. It takes rate setpoints (in acro mode
 via `manual_control_setpoint` topic) as inputs and outputs actuator control messages.
 
-The controller has a PID loop for angular rate error.
+The controller has a one order LADRC loop for angular rate error.
 
 )DESCR_STR");
 
