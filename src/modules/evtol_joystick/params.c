@@ -19,5 +19,5 @@
  * @value 16 Channel 17
  * @value 17 Channel 18
  */
-PARAM_DEFINE_INT32(STK_ARM, 10);
+PARAM_DEFINE_INT32(STK_ARM, 4);
 

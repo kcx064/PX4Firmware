@@ -52,6 +52,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_status.h>
 
 using namespace time_literals;
 
@@ -83,6 +84,8 @@ private:
 	// Subscriptions
 	uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};        // subscription that schedules WorkItemExample when updated
 	uORB::SubscriptionInterval         _parameter_update_sub{ORB_ID(parameter_update), 1_s}; // subscription limited to 1 Hz updates
+	uORB::Subscription                 _vehicle_status_sub{ORB_ID(vehicle_status)};
+	vehicle_status_s 			vehicle_status;
 
 	// uorb topics object
 	input_rc_s 				_input_rc{};
@@ -92,14 +95,16 @@ private:
 	//mavlink log on GCS(QGC)
 	orb_advert_t 			_mavlink_log_pub{nullptr};
 
+	hrt_abstime time_short_press{0};
+
 	//
-	enum precharge_state {
+	enum key_state {
 		waitaction = 0,
-		charging,
-		complete,
-		poweroff,
+		short_press_key,
+		release_key,
+		long_press_key,
 	};
-	precharge_state _precharge_state = waitaction;
+	key_state _key_state = waitaction;
 	int32_t start_precharge{0};
 	int32_t shutdown{0};
 	hrt_abstime timechargestart{0};

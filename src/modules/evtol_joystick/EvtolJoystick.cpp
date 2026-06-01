@@ -80,6 +80,10 @@ void EvtolJoystick::Run()
 		stkarm_channel = _param_stkarm_channel.get();
 	}
 
+	if (_vehicle_status_sub.updated()) {
+		_vehicle_status_sub.copy(&vehicle_status);
+	}
+
 	if (_input_rc_sub.updated()) {
 		_input_rc_sub.copy(&_input_rc);
 		// PX4_INFO("RC channel count: %d", _input_rc.channel_count);
@@ -88,24 +92,60 @@ void EvtolJoystick::Run()
 		vehicle_command_s cmd = {};
 		cmd.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
 
-		if(_input_rc.values[stkarm_channel]>1600 && stk_arm_channel_last<=1600)
-		{
-			cmd.param1 = 1.0f;//1.0表示解锁，0.0表示上锁
-			cmd.target_system = 1;
-			cmd.target_component = 1;
-			cmd.timestamp = hrt_absolute_time();
-			// 发布到vehicle_command主题
-			_vehicle_cmd_pub.publish(cmd);
-		}
+		uint16_t stk_arm_channel = _input_rc.values[stkarm_channel];
 
-		if(_input_rc.values[stkarm_channel]<=1600 && stk_arm_channel_last>1600)
+		switch (_key_state)
 		{
-			cmd.param1 = 0.0f;//1.0表示解锁，0.0表示上锁
-			cmd.target_system = 1;
-			cmd.target_component = 1;
-			cmd.timestamp = hrt_absolute_time();
-			// 发布到vehicle_command主题
-			_vehicle_cmd_pub.publish(cmd);
+		case key_state::waitaction:
+			if(stk_arm_channel_last > 1070 && stk_arm_channel_last < 1200 && stk_arm_channel < 1070)
+			{
+				_key_state = key_state::short_press_key;//检测到短按
+				time_short_press = hrt_absolute_time();
+				mavlink_log_warning(&_mavlink_log_pub, "shot press.");
+			}
+			break;
+
+		case key_state::short_press_key:
+			if(stk_arm_channel_last > 1200 && stk_arm_channel <1070)
+			{
+				_key_state = key_state::long_press_key;
+				PX4_INFO("long press.");
+			}else if(stk_arm_channel_last > 1070 && stk_arm_channel_last < 1200 && stk_arm_channel < 1070){
+				_key_state = key_state::waitaction;
+				mavlink_log_warning(&_mavlink_log_pub, "shot press.");
+			}
+
+			if(hrt_absolute_time() - time_short_press >= 5_s)
+			{
+				_key_state = key_state::waitaction;
+				PX4_INFO("long press timeout.");
+			}
+			break;
+
+		case key_state::long_press_key:
+			if(vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED)
+			{//目前是解锁状态，那么上锁
+				cmd.param1 = 0.0f;//上锁
+				cmd.target_system = 1;
+				cmd.target_component = 1;
+				cmd.timestamp = hrt_absolute_time();
+				// 发布到vehicle_command主题
+				_vehicle_cmd_pub.publish(cmd);
+			}else{//目前是上锁状态，那么解锁
+				cmd.param1 = 1.0f;//1.0表示解锁
+				cmd.target_system = 1;
+				cmd.target_component = 1;
+				cmd.timestamp = hrt_absolute_time();
+				// 发布到vehicle_command主题
+				_vehicle_cmd_pub.publish(cmd);
+			}
+
+			_key_state = key_state::waitaction;
+			break;
+
+		default:
+			_key_state = key_state::waitaction;
+			break;
 		}
 
 		stk_arm_channel_last = _input_rc.values[stkarm_channel];
