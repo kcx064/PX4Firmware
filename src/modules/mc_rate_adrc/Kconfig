@@ -1,0 +1,5 @@
+menuconfig MODULES_MC_RATE_ADRC
+	bool "mc_rate_adrc"
+	default n
+	---help---
+		Enable support for mc_rate_adrc
