@@ -40,6 +40,9 @@ private:
 		float x1;           // 估计的系统输出（跟踪测量值）
 		float x2;           // 估计的总扰动（包含内部动态和外部扰动）
 
+		//误差
+		float error;
+
 		// 输出限制
 		float max_output;   // 输出限幅值（如PWM最大值）
 
@@ -84,8 +87,8 @@ public:
 		   float td_n,
 		   float td_max_x2);
 
-	float calc(float target, float measure);
-	void param_update(float beta1, float beta2, float kp, float b);
+	float calc(float target, float measure, float dt);
+	void param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw);
 	first_order_ladrc_t ctl_param;
 };
 
@@ -97,8 +100,10 @@ lib_ladrc::~lib_ladrc()
 {
 }
 
-void lib_ladrc::param_update(float beta1, float beta2, float kp, float b)
+void lib_ladrc::param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw)
 {
+	ctl_param.max_output = max_output;
+
 	/* 初始化ESO参数 */
 	ctl_param.beta1 = beta1;
 	ctl_param.beta2 = beta2;
@@ -106,13 +111,15 @@ void lib_ladrc::param_update(float beta1, float beta2, float kp, float b)
 	/* 初始化控制器参数 */
 	ctl_param.kp = kp;
 	ctl_param.b = b;
+
+	ctl_param.dt = dt;
+	ctl_param.k_aw = k_aw;
 }
 
 
 /**
  * @brief 一阶LADRC初始化 - 参数固化+TD组合模式
  *
- * @param fladrc     一阶LADRC结构体指针
  * @param max_output 控制量输出限幅（例如PWM最大值）
  * @param beta1      ESO状态观测器增益1（位置观测带宽）
  * @param beta2      ESO状态观测器增益2（扰动观测带宽）
@@ -162,6 +169,8 @@ void lib_ladrc::init(float max_output,
 
 	/* 初始化输出 */
 	ctl_param.out = 0.0f;
+
+	ctl_param.error = 0.0f;
 
 	/* 初始化TD（组合模式）- 使用参数固化模式 */
 	if (td_r > 0.0f) {
@@ -226,7 +235,6 @@ void lib_ladrc::reset(float beta1,
 /**
  * @brief 一阶LADRC计算函数 - 核心控制算法
  *
- * @param fladrc  一阶LADRC结构体指针
  * @param target  目标值
  * @param measure 系统实际测量值
  * @return        控制量输出
@@ -238,7 +246,7 @@ void lib_ladrc::reset(float beta1,
  *       4. 扰动补偿得到实际控制量
  *       5. 输出限幅和抗积分饱和处理
  */
-float lib_ladrc::calc(float target, float measure)
+float lib_ladrc::calc(float target, float measure, float dt)
 {
 	/*
 	* 一阶LADRC原理：
@@ -271,14 +279,21 @@ float lib_ladrc::calc(float target, float measure)
 
 	/* 计算ESO微分方程 - 优化：只计算一次误差 */
 	float error = measure - ctl_param.x1;             // 观测误差 = 测量值 - 估计值
+	ctl_param.error = error;
 	float dx1 = ctl_param.x2 + ctl_param.b * ctl_param.pre_out + ctl_param.beta1 * error;
 							// 输出估计的微分
 							// = 扰动估计 + b*控制量 + 修正项
 	float dx2 = ctl_param.beta2 * error;              // 扰动估计的微分（假设扰动变化缓慢）
 
 	/* 更新状态估计值(欧拉积分，乘以dt) */
-	ctl_param.x1 += dx1 * ctl_param.dt;                 // 离散积分更新输出估计
-	ctl_param.x2 += dx2 * ctl_param.dt;                 // 离散积分更新扰动估计
+	if(ctl_param.dt > 0.0001f){				//如果大于0.0001f，为有效值。那么使用设定的dt，否则使用动态的dt
+		ctl_param.x1 += dx1 * ctl_param.dt;		// 离散积分更新输出估计
+		ctl_param.x2 += dx2 * ctl_param.dt;		// 离散积分更新扰动估计
+	}else{
+		ctl_param.x1 += dx1 * dt;			// 离散积分更新输出估计
+		ctl_param.x2 += dx2 * dt;			// 离散积分更新扰动估计
+	}
+
 
 	/* 步骤2: 计算控制量 */
 	/*
@@ -328,7 +343,7 @@ float lib_ladrc::calc(float target, float measure)
 
 	/* 保存输出用于下一次ESO计算 */
 	ctl_param.out = out_temp;
-	ctl_param.pre_out = out_temp;                     // 保存限幅后的输出，用于下一轮ESO更新
+	ctl_param.pre_out = out_temp;                   // 保存限幅后的输出，用于下一轮ESO更新
 							// 【关键】这防止了ESO看到"想要的"控制量，
 							// 而是看到"实际的"控制量，避免积分饱和
 

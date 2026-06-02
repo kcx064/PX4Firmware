@@ -80,7 +80,7 @@ public:
 	static int print_usage(const char *reason = nullptr);
 
 	int print_status() override;
-	float_t adrc_control;
+	float_t adrc_control_roll;
 	float_t adrc_control_yaw;
 
 	bool init();
@@ -97,15 +97,20 @@ private:
 
 	RateControl _rate_control; ///< class for rate control calculations
 	lib_ladrc adrc_roll;
-	float_t bw_ctl;
-	float_t bw_obs;
-	float_t gain_b;
-
+	float_t roll_bw_ctl{1};
+	float_t roll_bw_obs{1};
+	float_t roll_gain_b{1};
+	float_t roll_sat_k{0};
+	float_t roll_sat_tau{500};
 
 	lib_ladrc adrc_yaw;
-	float_t yaw_bw_ctl;
-	float_t yaw_bw_obs;
-	float_t yaw_gain_b;
+	float_t yaw_bw_ctl{1};
+	float_t yaw_bw_obs{1};
+	float_t yaw_gain_b{1};
+	float_t yaw_sat_k{0};
+	float_t yaw_sat_tau{500};
+
+	float_t adrc_step{0};
 
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 	uORB::Subscription _control_allocator_status_sub{ORB_ID(control_allocator_status)};
@@ -177,12 +182,18 @@ private:
 
 		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en,
 
-		(ParamFloat<px4::params::ADRC_BW_O>) _param_adrc_bw_obs,
-		(ParamFloat<px4::params::ADRC_BW_C>) _param_adrc_bw_ctl,
-		(ParamFloat<px4::params::ADRC_B>) _param_adrc_b,
+		(ParamFloat<px4::params::ROLL_BW_O>) _param_roll_bw_obs,
+		(ParamFloat<px4::params::ROLL_BW_C>) _param_roll_bw_ctl,
+		(ParamFloat<px4::params::ROLL_B>) _param_roll_b,
+		(ParamFloat<px4::params::ROLL_SAT_K>) _param_roll_sat_k,
+		(ParamFloat<px4::params::ROLL_SAT_TAU>) _param_roll_sat_tau,
 
 		(ParamFloat<px4::params::YAW_BW_O>) _param_yaw_bw_obs,
 		(ParamFloat<px4::params::YAW_BW_C>) _param_yaw_bw_ctl,
-		(ParamFloat<px4::params::YAW_B>) _param_yaw_b
+		(ParamFloat<px4::params::YAW_B>) _param_yaw_b,
+		(ParamFloat<px4::params::YAW_SAT_K>) _param_yaw_sat_k,
+		(ParamFloat<px4::params::YAW_SAT_TAU>) _param_yaw_sat_tau,
+
+		(ParamFloat<px4::params::ADRC_STEP>) _param_adrc_step
 	)
 };
