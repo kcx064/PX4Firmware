@@ -79,6 +79,10 @@ public:
 	/** @see ModuleBase */
 	static int print_usage(const char *reason = nullptr);
 
+	int print_status() override;
+	float_t adrc_control;
+	float_t adrc_control_yaw;
+
 	bool init();
 
 private:
@@ -96,6 +100,12 @@ private:
 	float_t bw_ctl;
 	float_t bw_obs;
 	float_t gain_b;
+
+
+	lib_ladrc adrc_yaw;
+	float_t yaw_bw_ctl;
+	float_t yaw_bw_obs;
+	float_t yaw_gain_b;
 
 	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 	uORB::Subscription _control_allocator_status_sub{ORB_ID(control_allocator_status)};
@@ -166,8 +176,13 @@ private:
 		(ParamFloat<px4::params::MC_ACRO_SUPEXPOY>) _param_mc_acro_supexpoy,		/**< superexpo stick curve shape (yaw) */
 
 		(ParamBool<px4::params::MC_BAT_SCALE_EN>) _param_mc_bat_scale_en,
+
 		(ParamFloat<px4::params::ADRC_BW_O>) _param_adrc_bw_obs,
 		(ParamFloat<px4::params::ADRC_BW_C>) _param_adrc_bw_ctl,
-		(ParamFloat<px4::params::ADRC_B>) _param_adrc_b
+		(ParamFloat<px4::params::ADRC_B>) _param_adrc_b,
+
+		(ParamFloat<px4::params::YAW_BW_O>) _param_yaw_bw_obs,
+		(ParamFloat<px4::params::YAW_BW_C>) _param_yaw_bw_ctl,
+		(ParamFloat<px4::params::YAW_B>) _param_yaw_b
 	)
 };

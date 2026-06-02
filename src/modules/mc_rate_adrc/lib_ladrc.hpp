@@ -54,7 +54,7 @@ private:
 		td_t td;            // 内嵌TD结构体
 		bool use_td;        // 是否使用TD（在初始化时根据td_r参数决定）
 	} first_order_ladrc_t;
-	first_order_ladrc_t ctl_param;
+
 	void td_init(td_t *td, float r, float dt, float n, float max_x2);
 	float td_fhan(float x1, float x2, float r, float h, float h0);
 	float td_update(td_t *td, float target);
@@ -86,6 +86,7 @@ public:
 
 	float calc(float target, float measure);
 	void param_update(float beta1, float beta2, float kp, float b);
+	first_order_ladrc_t ctl_param;
 };
 
 lib_ladrc::lib_ladrc(/* args */)
