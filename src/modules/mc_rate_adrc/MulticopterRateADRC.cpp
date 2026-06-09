@@ -308,7 +308,7 @@ MulticopterRateADRC::Run()
 			}
 
 			// run rate controller
-			const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
+			// const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
 			adrc_control_roll = adrc_roll.calc(_rates_setpoint(0), rates(0), dt);
 			adrc_control_pitch = adrc_pitch.calc(_rates_setpoint(1), rates(1), dt);
 			adrc_control_yaw = adrc_yaw.calc(_rates_setpoint(2), rates(2), dt);
@@ -335,7 +335,10 @@ MulticopterRateADRC::Run()
 			_thrust_setpoint.copyTo(vehicle_thrust_setpoint.xyz);
 			// vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(att_control(0)) ? att_control(0) : 0.f;
 			vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(adrc_control_roll) ? adrc_control_roll : 0.f; //ladrc
-			vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
+
+			// vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
+			vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(adrc_control_pitch) ? adrc_control_pitch : 0.f; //ladrc
+
 			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.f;
 			vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw) ? adrc_control_yaw : 0.f; //ladrc
 			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw2) ? adrc_control_yaw2 : 0.f; //ladrc2
