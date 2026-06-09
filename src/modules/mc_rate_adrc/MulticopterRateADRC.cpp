@@ -78,6 +78,13 @@ MulticopterRateADRC::init()
 	roll_sat_tau = _param_roll_sat_tau.get();
 	adrc_roll.init(roll_sat_tau, 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k, 0.0f, 3.0f, 0.0f);
 
+	pitch_bw_ctl = _param_pitch_bw_ctl.get();
+	pitch_bw_obs = _param_pitch_bw_obs.get();
+	pitch_gain_b = _param_pitch_b.get();
+	pitch_sat_k = _param_pitch_sat_k.get();
+	pitch_sat_tau = _param_pitch_sat_tau.get();
+	adrc_pitch.init(pitch_sat_tau, 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k, 0.0f, 3.0f, 0.0f);
+
 	yaw_bw_ctl = _param_yaw_bw_ctl.get();
 	yaw_bw_obs = _param_yaw_bw_obs.get();
 	yaw_gain_b = _param_yaw_b.get();
@@ -108,6 +115,13 @@ MulticopterRateADRC::parameters_updated()
 	roll_sat_k = _param_roll_sat_k.get();
 	roll_sat_tau = _param_roll_sat_tau.get();
 	adrc_roll.param_update(roll_sat_tau, 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k);
+
+	pitch_bw_ctl = _param_pitch_bw_ctl.get();
+	pitch_bw_obs = _param_pitch_bw_obs.get();
+	pitch_gain_b = _param_pitch_b.get();
+	pitch_sat_k = _param_pitch_sat_k.get();
+	pitch_sat_tau = _param_pitch_sat_tau.get();
+	adrc_pitch.param_update(pitch_sat_tau, 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k);
 
 	yaw_bw_ctl = _param_yaw_bw_ctl.get();
 	yaw_bw_obs = _param_yaw_bw_obs.get();
@@ -266,6 +280,7 @@ MulticopterRateADRC::Run()
 
 				//
 				adrc_roll.reset(2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k, 0.0f, 3.0f, 0.0f);
+				adrc_pitch.reset(2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k, 0.0f, 3.0f, 0.0f);
 				adrc_yaw.reset(2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k, 0.0f, 3.0f, 0.0f);
 				adrc_yaw2.reset(euler_yaw, 0, 0, 0.0f, 3.0f, 0.0f);//二阶ADRC位置控制，重置的时候必须把当前真实角度作为初始值，而不是0作为初始值
 			}
@@ -295,6 +310,7 @@ MulticopterRateADRC::Run()
 			// run rate controller
 			const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
 			adrc_control_roll = adrc_roll.calc(_rates_setpoint(0), rates(0), dt);
+			adrc_control_pitch = adrc_pitch.calc(_rates_setpoint(1), rates(1), dt);
 			adrc_control_yaw = adrc_yaw.calc(_rates_setpoint(2), rates(2), dt);
 
 			// vehicle_attitude_setpoint_s vehicle_attitude_setpoint;
@@ -417,9 +433,19 @@ int MulticopterRateADRC::print_status()
 {
 	PX4_INFO("ADRC roll out %f", static_cast<double>(adrc_control_roll));
 	PX4_INFO("ADRC roll rate_setpoint %f", static_cast<double>(_rates_setpoint(0)));
+	PX4_INFO("ADRC roll rate %f", static_cast<double>(adrc_roll.ctl_param.measure));
 	PX4_INFO("ADRC roll x1 (estimated roll rate) %f", static_cast<double>(adrc_roll.ctl_param.x1));
 	PX4_INFO("ADRC roll error (roll rate - x1) %f", static_cast<double>(adrc_roll.ctl_param.error));
 	PX4_INFO("ADRC roll x2 (lumped disturbance)%f", static_cast<double>(adrc_roll.ctl_param.x2));
+
+	PX4_INFO("-------");
+
+	PX4_INFO("ADRC pitch out %f", static_cast<double>(adrc_control_pitch));
+	PX4_INFO("ADRC pitch rate_setpoint %f", static_cast<double>(_rates_setpoint(1)));
+	PX4_INFO("ADRC pitch rate %f", static_cast<double>(adrc_pitch.ctl_param.measure));
+	PX4_INFO("ADRC pitch x1 (estimated pitch rate)%f", static_cast<double>(adrc_pitch.ctl_param.x1));
+	PX4_INFO("ADRC pitch error (pitch rate - x1) %f", static_cast<double>(adrc_pitch.ctl_param.error));
+	PX4_INFO("ADRC pitch x2 (lumped disturbance)%f", static_cast<double>(adrc_pitch.ctl_param.x2));
 
 	PX4_INFO("-------");
 
@@ -430,13 +456,13 @@ int MulticopterRateADRC::print_status()
 	PX4_INFO("ADRC yaw error (yaw rate - x1) %f", static_cast<double>(adrc_yaw.ctl_param.error));
 	PX4_INFO("ADRC yaw x2 (lumped disturbance)%f", static_cast<double>(adrc_yaw.ctl_param.x2));
 
-	PX4_INFO("-------");
-	PX4_INFO("ADRC yaw2 out %f", static_cast<double>(adrc_control_yaw2));
-	PX4_INFO("ADRC yaw2 yaw_sp %f", static_cast<double>(euler_yaw_d));
-	PX4_INFO("ADRC yaw2 yaw %f", static_cast<double>(adrc_yaw2.ctl_param.measure));
-	PX4_INFO("ADRC yaw2 x1 (estimated yaw)%f", static_cast<double>(adrc_yaw2.ctl_param.x1));
-	PX4_INFO("ADRC yaw2 error (yaw - x1) %f", static_cast<double>(adrc_yaw2.ctl_param.error));
-	PX4_INFO("ADRC yaw2 x2 (estimated yaw rate)%f", static_cast<double>(adrc_yaw2.ctl_param.x2));
+	// PX4_INFO("-------");
+	// PX4_INFO("ADRC yaw2 out %f", static_cast<double>(adrc_control_yaw2));
+	// PX4_INFO("ADRC yaw2 yaw_sp %f", static_cast<double>(euler_yaw_d));
+	// PX4_INFO("ADRC yaw2 yaw %f", static_cast<double>(adrc_yaw2.ctl_param.measure));
+	// PX4_INFO("ADRC yaw2 x1 (estimated yaw)%f", static_cast<double>(adrc_yaw2.ctl_param.x1));
+	// PX4_INFO("ADRC yaw2 error (yaw - x1) %f", static_cast<double>(adrc_yaw2.ctl_param.error));
+	// PX4_INFO("ADRC yaw2 x2 (estimated yaw rate)%f", static_cast<double>(adrc_yaw2.ctl_param.x2));
 	return 0;
 }
 

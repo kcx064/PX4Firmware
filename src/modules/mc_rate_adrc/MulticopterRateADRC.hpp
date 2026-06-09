@@ -86,6 +86,7 @@ public:
 
 	int print_status() override;
 	float_t adrc_control_roll;
+	float_t adrc_control_pitch;
 	float_t adrc_control_yaw;
 	float_t adrc_control_yaw2;
 
@@ -102,27 +103,34 @@ private:
 	void updateActuatorControlsStatus(const vehicle_torque_setpoint_s &vehicle_torque_setpoint, float dt);
 
 	RateControl _rate_control; ///< class for rate control calculations
+
 	lib_ladrc adrc_roll;
 	float_t roll_bw_ctl{1};
 	float_t roll_bw_obs{1};
 	float_t roll_gain_b{1};
 	float_t roll_sat_k{0};
-	float_t roll_sat_tau{500};
+	float_t roll_sat_tau{1.0};
+
+	lib_ladrc adrc_pitch;
+	float_t pitch_bw_ctl{1};
+	float_t pitch_bw_obs{1};
+	float_t pitch_gain_b{1};
+	float_t pitch_sat_k{0};
+	float_t pitch_sat_tau{1.0};
 
 	lib_ladrc adrc_yaw;
-	lib_ladrc2 adrc_yaw2;
-
 	float_t yaw_bw_ctl{1};
 	float_t yaw_bw_obs{1};
 	float_t yaw_gain_b{1};
 	float_t yaw_sat_k{0};
-	float_t yaw_sat_tau{500};
+	float_t yaw_sat_tau{1.0};
 
+	lib_ladrc2 adrc_yaw2;
 	float_t yaw_bw_ctl2{1};
 	float_t yaw_bw_obs2{1};
 	float_t yaw_gain_b2{1};
 	float_t yaw_sat_k2{0};
-	float_t yaw_sat_tau2{500};
+	float_t yaw_sat_tau2{1.0};
 
 	float_t adrc_step{0};
 
@@ -211,6 +219,12 @@ private:
 		(ParamFloat<px4::params::ROLL_B>) _param_roll_b,
 		(ParamFloat<px4::params::ROLL_SAT_K>) _param_roll_sat_k,
 		(ParamFloat<px4::params::ROLL_SAT_TAU>) _param_roll_sat_tau,
+
+		(ParamFloat<px4::params::PITCH_BW_O>) _param_pitch_bw_obs,
+		(ParamFloat<px4::params::PITCH_BW_C>) _param_pitch_bw_ctl,
+		(ParamFloat<px4::params::PITCH_B>) _param_pitch_b,
+		(ParamFloat<px4::params::PITCH_SAT_K>) _param_pitch_sat_k,
+		(ParamFloat<px4::params::PITCH_SAT_TAU>) _param_pitch_sat_tau,
 
 		(ParamFloat<px4::params::YAW_BW_O>) _param_yaw_bw_obs,
 		(ParamFloat<px4::params::YAW_BW_C>) _param_yaw_bw_ctl,
