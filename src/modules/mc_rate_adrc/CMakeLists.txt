@@ -40,6 +40,7 @@ px4_add_module(
 		MulticopterRateADRC.cpp
 		MulticopterRateADRC.hpp
 		lib_ladrc.hpp
+		lib_ladrc2.hpp
 	DEPENDS
 		circuit_breaker
 		mathlib

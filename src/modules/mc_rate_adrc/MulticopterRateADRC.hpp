@@ -60,7 +60,12 @@
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/vehicle_torque_setpoint.h>
 
+#include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_attitude_setpoint.h>
+#include <uORB/topics/trajectory_setpoint.h>
+
 #include "lib_ladrc.hpp"
+#include "lib_ladrc2.hpp"
 
 using namespace time_literals;
 
@@ -82,6 +87,7 @@ public:
 	int print_status() override;
 	float_t adrc_control_roll;
 	float_t adrc_control_yaw;
+	float_t adrc_control_yaw2;
 
 	bool init();
 
@@ -104,11 +110,19 @@ private:
 	float_t roll_sat_tau{500};
 
 	lib_ladrc adrc_yaw;
+	lib_ladrc2 adrc_yaw2;
+
 	float_t yaw_bw_ctl{1};
 	float_t yaw_bw_obs{1};
 	float_t yaw_gain_b{1};
 	float_t yaw_sat_k{0};
 	float_t yaw_sat_tau{500};
+
+	float_t yaw_bw_ctl2{1};
+	float_t yaw_bw_obs2{1};
+	float_t yaw_gain_b2{1};
+	float_t yaw_sat_k2{0};
+	float_t yaw_sat_tau2{500};
 
 	float_t adrc_step{0};
 
@@ -120,9 +134,19 @@ private:
 	uORB::Subscription _vehicle_rates_setpoint_sub{ORB_ID(vehicle_rates_setpoint)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
 
+	uORB::Subscription _vehicle_attitude_setpoint_sub{ORB_ID(vehicle_attitude_setpoint)};
+
+	uORB::Subscription _vehicle_trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
+	float euler_yaw_d{0};
+	float euler_yaw{0};
+	float yaw_rate_sp{0};
+
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};
+
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
+	vehicle_angular_velocity_s angular_velocity;
 
 	uORB::Publication<actuator_controls_status_s>	_actuator_controls_status_pub{ORB_ID(actuator_controls_status_0)};
 	uORB::PublicationMulti<rate_ctrl_status_s>	_controller_status_pub{ORB_ID(rate_ctrl_status)};
@@ -193,6 +217,12 @@ private:
 		(ParamFloat<px4::params::YAW_B>) _param_yaw_b,
 		(ParamFloat<px4::params::YAW_SAT_K>) _param_yaw_sat_k,
 		(ParamFloat<px4::params::YAW_SAT_TAU>) _param_yaw_sat_tau,
+
+		(ParamFloat<px4::params::YAW2_BW_O>) _param_yaw_bw_obs2,
+		(ParamFloat<px4::params::YAW2_BW_C>) _param_yaw_bw_ctl2,
+		(ParamFloat<px4::params::YAW2_B>) _param_yaw_b2,
+		(ParamFloat<px4::params::YAW2_SAT_K>) _param_yaw_sat_k2,
+		(ParamFloat<px4::params::YAW2_SAT_TAU>) _param_yaw_sat_tau2,
 
 		(ParamFloat<px4::params::ADRC_STEP>) _param_adrc_step
 	)

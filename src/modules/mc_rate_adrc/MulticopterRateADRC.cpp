@@ -84,6 +84,15 @@ MulticopterRateADRC::init()
 	yaw_sat_k = _param_yaw_sat_k.get();
 	yaw_sat_tau = _param_yaw_sat_tau.get();
 	adrc_yaw.init(yaw_sat_tau, 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k, 0.0f, 3.0f, 0.0f);
+
+	yaw_bw_ctl2 = _param_yaw_bw_ctl2.get();
+	yaw_bw_obs2 = _param_yaw_bw_obs2.get();
+	yaw_gain_b2 = _param_yaw_b2.get();
+	yaw_sat_k2 = _param_yaw_sat_k2.get();
+	yaw_sat_tau2 = _param_yaw_sat_tau2.get();
+	adrc_yaw2.init(yaw_sat_tau2, 3*yaw_bw_obs2, 3*yaw_bw_obs2*yaw_bw_obs2, yaw_bw_obs2*yaw_bw_obs2*yaw_bw_obs2, yaw_bw_ctl2*yaw_bw_ctl2, 2.0f*yaw_bw_ctl2, yaw_gain_b2, adrc_step, yaw_sat_k2, 0, 3.0f, 0.0f);
+
+
 	return true;
 }
 
@@ -106,6 +115,14 @@ MulticopterRateADRC::parameters_updated()
 	yaw_sat_k = _param_yaw_sat_k.get();
 	yaw_sat_tau = _param_yaw_sat_tau.get();
 	adrc_yaw.param_update(yaw_sat_tau, 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k);
+
+
+	yaw_bw_ctl2 = _param_yaw_bw_ctl2.get();
+	yaw_bw_obs2 = _param_yaw_bw_obs2.get();
+	yaw_gain_b2 = _param_yaw_b2.get();
+	yaw_sat_k2 = _param_yaw_sat_k2.get();
+	yaw_sat_tau2 = _param_yaw_sat_tau2.get();
+	adrc_yaw2.param_update(yaw_sat_tau2, 3*yaw_bw_obs2, 3*yaw_bw_obs2*yaw_bw_obs2, yaw_bw_obs2*yaw_bw_obs2*yaw_bw_obs2, yaw_bw_ctl2*yaw_bw_ctl2, 2.0f*yaw_bw_ctl2, yaw_gain_b2, adrc_step, yaw_sat_k2);
 
 	// rate control parameters
 	// The controller gain K is used to convert the parallel (P + I/s + sD) form
@@ -150,8 +167,33 @@ MulticopterRateADRC::Run()
 		parameters_updated();
 	}
 
+
+	// vehicle_attitude_setpoint_s vehicle_attitude_setpoint;
+	// if(_vehicle_attitude_setpoint_sub.update(&vehicle_attitude_setpoint))
+	// {
+	// 	// const Quatf q_d{vehicle_attitude_setpoint.q_d};
+	// 	// const Eulerf euler_d(q_d);
+	// 	// euler_yaw_d = euler_d.psi();
+	// 	yaw_rate_sp = vehicle_attitude_setpoint.yaw_sp_move_rate;
+	// 	euler_yaw_d += yaw_rate_sp
+	// }
+
+	// trajectory_setpoint_s traj_sp;
+	// if(_vehicle_trajectory_setpoint_sub.update(&traj_sp))
+	// {
+	// 	euler_yaw_d = traj_sp.yaw;
+	// }
+
+	vehicle_attitude_s v_att;
+	if(_vehicle_attitude_sub.update(&v_att))
+	{
+		const Quatf q{v_att.q};
+		const Eulerf euler(q);
+		euler_yaw = euler.psi();
+	}
+
 	/* run controller on gyro changes */
-	vehicle_angular_velocity_s angular_velocity;
+
 
 	if (_vehicle_angular_velocity_sub.update(&angular_velocity)) {
 
@@ -225,6 +267,7 @@ MulticopterRateADRC::Run()
 				//
 				adrc_roll.reset(2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k, 0.0f, 3.0f, 0.0f);
 				adrc_yaw.reset(2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k, 0.0f, 3.0f, 0.0f);
+				adrc_yaw2.reset(euler_yaw, 0, 0, 0.0f, 3.0f, 0.0f);//二阶ADRC位置控制，重置的时候必须把当前真实角度作为初始值，而不是0作为初始值
 			}
 
 			// update saturation status from control allocation feedback
@@ -254,6 +297,15 @@ MulticopterRateADRC::Run()
 			adrc_control_roll = adrc_roll.calc(_rates_setpoint(0), rates(0), dt);
 			adrc_control_yaw = adrc_yaw.calc(_rates_setpoint(2), rates(2), dt);
 
+			// vehicle_attitude_setpoint_s vehicle_attitude_setpoint;
+			// if(_vehicle_attitude_setpoint_sub.update(&vehicle_attitude_setpoint))
+			// {
+			// 	yaw_rate_sp = vehicle_attitude_setpoint.yaw_sp_move_rate;
+			// 	euler_yaw_d += yaw_rate_sp * dt;
+			// }
+
+			// adrc_control_yaw2 = adrc_yaw2.calc(euler_yaw_d, euler_yaw, dt);
+
 			// publish rate controller status
 			rate_ctrl_status_s rate_ctrl_status{};
 			_rate_control.getRateControlStatus(rate_ctrl_status);
@@ -269,7 +321,8 @@ MulticopterRateADRC::Run()
 			vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(adrc_control_roll) ? adrc_control_roll : 0.f; //ladrc
 			vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
 			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.f;
-			vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw) ? adrc_control_yaw : 0.f;
+			vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw) ? adrc_control_yaw : 0.f; //ladrc
+			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw2) ? adrc_control_yaw2 : 0.f; //ladrc2
 
 			// scale setpoints by battery status if enabled
 			if (_param_mc_bat_scale_en.get()) {
@@ -372,10 +425,18 @@ int MulticopterRateADRC::print_status()
 
 	PX4_INFO("ADRC yaw out %f", static_cast<double>(adrc_control_yaw));
 	PX4_INFO("ADRC yaw rate_setpoint %f", static_cast<double>(_rates_setpoint(2)));
+	PX4_INFO("ADRC yaw rate %f", static_cast<double>(adrc_yaw.ctl_param.measure));
 	PX4_INFO("ADRC yaw x1 (estimated yaw rate)%f", static_cast<double>(adrc_yaw.ctl_param.x1));
 	PX4_INFO("ADRC yaw error (yaw rate - x1) %f", static_cast<double>(adrc_yaw.ctl_param.error));
 	PX4_INFO("ADRC yaw x2 (lumped disturbance)%f", static_cast<double>(adrc_yaw.ctl_param.x2));
 
+	PX4_INFO("-------");
+	PX4_INFO("ADRC yaw2 out %f", static_cast<double>(adrc_control_yaw2));
+	PX4_INFO("ADRC yaw2 yaw_sp %f", static_cast<double>(euler_yaw_d));
+	PX4_INFO("ADRC yaw2 yaw %f", static_cast<double>(adrc_yaw2.ctl_param.measure));
+	PX4_INFO("ADRC yaw2 x1 (estimated yaw)%f", static_cast<double>(adrc_yaw2.ctl_param.x1));
+	PX4_INFO("ADRC yaw2 error (yaw - x1) %f", static_cast<double>(adrc_yaw2.ctl_param.error));
+	PX4_INFO("ADRC yaw2 x2 (estimated yaw rate)%f", static_cast<double>(adrc_yaw2.ctl_param.x2));
 	return 0;
 }
 

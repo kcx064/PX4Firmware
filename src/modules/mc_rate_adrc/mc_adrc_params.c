@@ -153,3 +153,71 @@ PARAM_DEFINE_FLOAT(YAW_SAT_K, 1.f);
  * @group Multicopter ADRC
  */
 PARAM_DEFINE_FLOAT(YAW_SAT_TAU, 500.f);
+
+/**
+ * Observer bandwidth YAW
+ *
+ * Observer bandwidth.
+ *
+ * @unit rad/s
+ * @min 0.0
+ * @max 2000.0
+ * @decimal 1
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW2_BW_O, 10.f);
+
+/**
+ * Control bandwidth YAW
+ *
+ * Control bandwidth.
+ *
+ * @unit rad/s
+ * @min 0.0
+ * @max 2000.0
+ * @decimal 1
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW2_BW_C, 1.f);
+
+/**
+ * System Gain YAW
+ *
+ * System Gain.
+ *
+ * @min 0.0001
+ * @max 2000.0
+ * @decimal 1
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW2_B, 1.f);
+
+/**
+ * Yaw Anti-Saturation Gain
+ *
+ * Yaw Anti-Saturation Gain. 0 means disable anti-saturation. 1~3 is suggested.
+ *
+ * @min 0.0
+ * @max 10.0
+ * @decimal 1
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW2_SAT_K, 1.f);
+
+
+/**
+ * Yaw torgue Saturation MAX
+ *
+ * Yaw torgue Saturation MAX.
+ *
+ * @min 0.0
+ * @max 1000.0
+ * @decimal 1
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW2_SAT_TAU, 500.f);

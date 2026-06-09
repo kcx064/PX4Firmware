@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-class lib_ladrc
+class lib_ladrc2
 {
 private:
 
@@ -20,25 +20,28 @@ private:
 	} td_t;
 
 	/**
-	 * @brief 一阶LADRC结构体
-	 * @note  适用于电流/简单速度控制等一阶系统
+	 * @brief 二阶LADRC结构体
+	 * @note  适用于位置/角度控制等二阶系统
 	 *        采用组合模式，内嵌TD模块
 	 */
 	typedef struct first_order_ladrc_s {
 		// ESO增益（二阶观测器）
 		float beta1;        // ESO增益beta1 - 位置观测带宽
-		float beta2;        // ESO增益beta2 - 扰动观测带宽
+		float beta2;        // ESO增益beta2 - 速度观测带宽
+		float beta3;        // ESO增益beta3 - 扰动观测带宽
 
 		// 控制器增益
 		float kp;           // 比例增益 - 控制器刚度
+		float kd;           // 微分增益（阻尼）- 注意：LADRC中通常设为0，由b0处理，除非需要额外的PD
 
 		// 系统参数
 		float b;            // 控制增益(b0) - 决定控制量的缩放比例
 		float dt;           // 采样周期(秒) - 【固化参数】RTOS固定周期
 
 		// 状态估计值
-		float x1;           // 估计的系统输出（跟踪测量值）
-		float x2;           // 估计的总扰动（包含内部动态和外部扰动）
+		float x1;           // 估计的位置（跟踪测量值）
+		float x2;           // 估计的速度
+		float x3;           // 估计的总扰动（包含内部动态和外部扰动）
 
 		//误差
 		float error;
@@ -65,12 +68,14 @@ private:
 	void td_reset(td_t *td, float init_value);
 
 public:
-	lib_ladrc(/* args */);
-	~lib_ladrc();
+	lib_ladrc2(/* args */);
+	~lib_ladrc2();
 	void init(float max_output,
 		  float beta1,
 		  float beta2,
+		  float beta3,
 		  float kp,
+		  float kd,
 		  float b,
 		  float dt,
 		  float k_aw,
@@ -78,43 +83,44 @@ public:
 		  float td_n,
 		  float td_max_x2);
 
-	void reset(float beta1,
-		   float beta2,
-		   float kp,
-		   float b,
-		   float dt,
-		   float k_aw,
+	void reset(float x1,
+		   float x2,
+		   float x3,
 		   float td_r,
 		   float td_n,
 		   float td_max_x2);
 
 	float calc(float target, float measure, float dt);
-	void param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw);
+	void param_update(float max_output, float beta1, float beta2, float beta3, float kp, float kd, float b, float dt, float k_aw);
 	first_order_ladrc_t ctl_param;
 };
 
-lib_ladrc::lib_ladrc(/* args */)
+lib_ladrc2::lib_ladrc2(/* args */)
 {
 }
 
-lib_ladrc::~lib_ladrc()
+lib_ladrc2::~lib_ladrc2()
 {
 }
 
-void lib_ladrc::param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw)
+void lib_ladrc2::param_update(float max_output, float beta1, float beta2, float beta3, float kp, float kd, float b, float dt, float k_aw)
 {
 	ctl_param.max_output = max_output;
 
 	/* 初始化ESO参数 */
 	ctl_param.beta1 = beta1;
 	ctl_param.beta2 = beta2;
+	ctl_param.beta3 = beta3;
 
 	/* 初始化控制器参数 */
 	ctl_param.kp = kp;
+	ctl_param.kd = kd;
 	ctl_param.b = b;
 
 	ctl_param.dt = dt;
 	ctl_param.k_aw = k_aw;
+
+	ctl_param.td.h = dt;
 }
 
 
@@ -134,10 +140,12 @@ void lib_ladrc::param_update(float max_output, float beta1, float beta2, float k
  *                   N=1: 滤波最弱响应最快；N=3~5: 典型推荐值；N>10: 强滤波但滞后明显
  * @param td_max_x2  TD最大速度限制(0表示不限制) - 防止设定值跳变过大导致系统冲击
  */
-void lib_ladrc::init(float max_output,
+void lib_ladrc2::init(float max_output,
 		     float beta1,
 		     float beta2,
+		     float beta3,
 		     float kp,
+		     float kd,
 		     float b,
 		     float dt,
 		     float k_aw,
@@ -149,14 +157,17 @@ void lib_ladrc::init(float max_output,
 	/* 初始化ESO参数 */
 	ctl_param.beta1 = beta1;
 	ctl_param.beta2 = beta2;
+	ctl_param.beta3 = beta3;
 
 	/* 初始化控制器参数 */
 	ctl_param.kp = kp;
+	ctl_param.kd = kd;
 	ctl_param.b = b;
 
 	/* 初始化状态估计值 */
-	ctl_param.x1 = 0.0f;                              // 输出估计清零
-	ctl_param.x2 = 0.0f;                              // 扰动估计清零
+	ctl_param.x1 = 0.0f;                              // 位置量估计清零
+	ctl_param.x2 = 0.0f;                              // 速度量估计清零
+	ctl_param.x3 = 0.0f;				  // 扰动量估计清零
 
 	/* 初始化输出限制 */
 	ctl_param.max_output = max_output;
@@ -182,6 +193,8 @@ void lib_ladrc::init(float max_output,
 
 	} else {
 		ctl_param.use_td = false;                     // 禁用TD，目标值直接透传
+		// 为了安全，将 TD 状态清零
+        	td_reset(&ctl_param.td, 0.0f);
 	}
 }
 
@@ -191,27 +204,27 @@ void lib_ladrc::init(float max_output,
  * @note 在系统运行过程中动态调整参数，同时重置ESO状态避免瞬态问题
  *       常用于自适应控制、参数调度等场景
  */
-void lib_ladrc::reset(float beta1,
-		      float beta2,
-		      float kp,
-		      float b,
-		      float dt,
-		      float k_aw,
+void lib_ladrc2::reset(float x1,
+		      float x2,
+		      float x3,
 		      float td_r,
 		      float td_n,
 		      float td_max_x2)
 {
 	/* 更新控制参数 */
-	ctl_param.beta1 = beta1;
-	ctl_param.beta2 = beta2;
-	ctl_param.kp = kp;
-	ctl_param.b = b;
-	ctl_param.dt = dt;
-	ctl_param.k_aw = k_aw;
+	// ctl_param.beta1 = beta1;
+	// ctl_param.beta2 = beta2;
+	// ctl_param.beta3 = beta3;
+	// ctl_param.kp = kp;
+	// ctl_param.kd = kd;
+	// ctl_param.b = b;
+	// ctl_param.dt = dt;
+	// ctl_param.k_aw = k_aw;
 
 	/* 重置 ESO 状态，避免参数切换时的瞬态问题 */
-	ctl_param.x1 = 0.0f;
-	ctl_param.x2 = 0.0f;
+	ctl_param.x1 = x1;
+	ctl_param.x2 = x2;
+	ctl_param.x3 = x3;
 	ctl_param.pre_out = 0.0f;
 
 	/* 重新配置TD参数 - 使用参数固化模式 */
@@ -224,8 +237,8 @@ void lib_ladrc::reset(float beta1,
 		}
 
 		ctl_param.td.r = td_r;
-		ctl_param.td.h = dt;          // 固化采样周期
-		ctl_param.td.h0 = n * dt;     // 计算内部滤波参数 h0 = N * dt
+		// ctl_param.td.h = dt;          // 固化采样周期
+		ctl_param.td.h0 = n * ctl_param.td.h;     // 计算内部滤波参数 h0 = N * dt
 		ctl_param.td.max_x2 = td_max_x2;
 		ctl_param.use_td = true;
 
@@ -235,20 +248,21 @@ void lib_ladrc::reset(float beta1,
 }
 
 /**
- * @brief 一阶LADRC计算函数 - 核心控制算法
+ * @brief 二阶LADRC计算 - 核心控制算法
  *
- * @param target  目标值
- * @param measure 系统实际测量值
- * @return        控制量输出
+ * @param ladrc    二阶LADRC结构体指针
+ * @param target   目标值
+ * @param measure  系统实际测量值（如编码器读数）
+ * @return         控制量输出
  *
  * @note 控制流程：
  *       1. TD平滑目标值（如果启用）
- *       2. 二阶ESO估计系统状态和总扰动
- *       3. P控制器计算虚拟控制量u0
+ *       2. 三阶ESO估计系统状态（位置、速度）和总扰动
+ *       3. PD控制器计算虚拟控制量u0
  *       4. 扰动补偿得到实际控制量
  *       5. 输出限幅和抗积分饱和处理
  */
-float lib_ladrc::calc(float target, float measure, float dt)
+float lib_ladrc2::calc(float target, float measure, float dt)
 {
 	/*
 	* 一阶LADRC原理：
@@ -265,52 +279,58 @@ float lib_ladrc::calc(float target, float measure, float dt)
 							// 同时fladrc->td.x2为目标变化率
 	}
 
-	/* 步骤1: 执行二阶扩张状态观测器(ESO) */
+	/* 步骤1: 执行三阶扩张状态观测器(ESO) */
 	/*
-	* 一阶系统ESO公式 (二阶观测器):
-	* dx1 = x2 + b*u + beta1 * (measure - x1)   <- ẋ1 = x2 + b*u + 修正项
-	* dx2 = beta2 * (measure - x1)              <- ẋ2 = 扰动变化率
+	* 二阶LADRC被控对象: ẍ = f + b*u
+	* 三阶ESO公式:
+	* dx1 = x2 + β1*(y - x1)         <- ẋ1 = x2 (速度)
+	* dx2 = x3 + b*u + β2*(y - x1)   <- ẋ2 = x3 + b*u (加速度=扰动+控制)
+	* dx3 = β3*(y - x1)              <- ẋ3 = df/dt (扰动变化率，假设变化缓慢)
 	*
 	* 状态含义:
-	* x1 - 系统输出估计（跟踪测量值measure）
-	* x2 - 总扰动估计（包含内部动态f(x)和外部扰动w）
+	* x1 = y (位置估计)
+	* x2 = ẏ = v (速度估计)
+	* x3 = f(x,ẋ,d) (总扰动估计，包含模型不确定性和外部扰动)
 	*
 	* 关键设计：使用上一时刻的实际输出(限幅后的pre_out)进行ESO更新，
 	*          防止积分饱和导致观测器发散
 	*/
 
 	/* 计算ESO微分方程 - 优化：只计算一次误差 */
-	float error = measure - ctl_param.x1;           // 观测误差 = 测量值 - 估计值
+	float error = measure - ctl_param.x1;              // 观测误差 = 测量值 - 估计值
 	ctl_param.error = error;
 	ctl_param.measure = measure;
-	float dx1 = ctl_param.x2 + ctl_param.b * ctl_param.pre_out + ctl_param.beta1 * error;
-							// 输出估计的微分
-							// = 扰动估计 + b*控制量 + 修正项
-	float dx2 = ctl_param.beta2 * error;            // 扰动估计的微分（假设扰动变化缓慢）
+	float dx1 = ctl_param.x2 + ctl_param.beta1 * error;   // 位置估计的微分 = 速度估计 + 修正项
+	float dx2 = ctl_param.x3 + ctl_param.b * ctl_param.pre_out + ctl_param.beta2 * error;
+							// 速度估计的微分 = 扰动估计 + b*控制量 + 修正项
+	float dx3 = ctl_param.beta3 * error;               // 扰动估计的微分（假设扰动变化缓慢）
 
 	/* 更新状态估计值(欧拉积分，乘以dt) */
 	if(ctl_param.dt > 0.0001f){				//如果大于0.0001f，为有效值。那么使用设定的dt，否则使用动态的dt
-		ctl_param.x1 += dx1 * ctl_param.dt;		// 离散积分更新输出估计
-		ctl_param.x2 += dx2 * ctl_param.dt;		// 离散积分更新扰动估计
+		ctl_param.x1 += dx1 * ctl_param.dt;
+		ctl_param.x2 += dx2 * ctl_param.dt;
+		ctl_param.x3 += dx3 * ctl_param.dt;
 	}else{
-		ctl_param.x1 += dx1 * dt;			// 离散积分更新输出估计
-		ctl_param.x2 += dx2 * dt;			// 离散积分更新扰动估计
+		ctl_param.x1 += dx1 * dt;
+		ctl_param.x2 += dx2 * dt;
+		ctl_param.x3 += dx3 * dt;
 	}
 
 
-	/* 步骤2: 计算控制量 */
+	 /* 步骤2: 计算控制量u0 */
 	/*
-	* 一阶LADRC控制律:
-	* u0 = kp * (target - x1)        // 名义控制：P控制器
-	* u = (u0 - x2) / b              // 扰动补偿：用估计的扰动x2进行前馈补偿
+	* 控制律公式:
+	* u0 = kp * (r - x1) - kd * x2   // 名义控制：PD控制器
+	* u = (u0 - x3) / b              // 扰动补偿：用估计的扰动x3进行前馈补偿
 	*
-	* 物理意义：通过ESO估计出总扰动x2，在控制量中将其抵消，
-	*          使系统变为纯粹的积分器 ẋ = b*u0
+	* 物理意义：通过ESO估计出总扰动x3，在控制量中将其抵消，
+	*          使系统变为纯粹的二重积分器 ẍ = b*u0
 	*/
 
 	/* 计算名义控制量u0 */
-	float u0 = ctl_param.kp * (td_target - ctl_param.x1);
-							// P控制器：u0 = kp * 误差
+	float u0 = ctl_param.kp * (td_target - ctl_param.x1) - ctl_param.kd * ctl_param.x2;
+                                                    // PD控制器：u0 = kp*误差 - kd*速度
+                                                    // 注意：LADRC中kd通常设为0，由b0处理阻尼
 
 	/* 抗积分饱和处理 */
 	/*
@@ -319,7 +339,7 @@ float lib_ladrc::calc(float target, float measure, float dt)
 	* 抗积分饱和通过检测饱和误差，调整u0使其退出饱和状态。
 	*/
 	if (ctl_param.k_aw > 0.0f && fabsf(ctl_param.pre_out) >= ctl_param.max_output * 0.99f) {
-		float u_ideal = (u0 - ctl_param.x2) / ctl_param.b;
+		float u_ideal = (u0 - ctl_param.x3) / ctl_param.b;
 							// 理论上的理想控制量（无限幅时）
 		float saturation_error = ctl_param.pre_out - u_ideal;
 							// 饱和误差 = 实际输出 - 理想输出
@@ -333,7 +353,7 @@ float lib_ladrc::calc(float target, float measure, float dt)
 	if (fabsf(ctl_param.b) < 0.0001f) {               // 安全检查：防止除零
 		out_temp = 0.0f;
 	} else {
-		out_temp = (u0 - ctl_param.x2) / ctl_param.b;   // 扰动补偿：u = (u0 - x2) / b
+		out_temp = (u0 - ctl_param.x3) / ctl_param.b;   // 扰动补偿：u = (u0 - x2) / b
 							// 将估计的扰动x2从控制量中抵消
 	}
 
@@ -367,7 +387,7 @@ float lib_ladrc::calc(float target, float measure, float dt)
  *       2. 自动计算内部滤波参数：td->h0 = n * dt
  *       3. 安全检查：如果 n < 1.0，强制设为 1.0，防止数学模型崩溃
  */
-void lib_ladrc::td_init(td_t *td, float r, float dt, float n, float max_x2)
+void lib_ladrc2::td_init(td_t *td, float r, float dt, float n, float max_x2)
 {
 	/* 安全性检查：滤波因子N不能小于1.0，否则数学模型会崩溃 */
 	if (n < 1.0f) {
@@ -395,7 +415,7 @@ void lib_ladrc::td_init(td_t *td, float r, float dt, float n, float max_x2)
  * @param h0 滤波因子（用于输入滤波，典型值为h的5-10倍）
  * @return 加速度输出
  */
-float lib_ladrc::td_fhan(float x1, float x2, float r, float h, float h0)
+float lib_ladrc2::td_fhan(float x1, float x2, float r, float h, float h0)
 {
 	float d = r * h;                                // 单步速度变化量 (delta v)
 	// d = r·h 是离散系统能感知的最小速度单位
@@ -465,7 +485,7 @@ float lib_ladrc::td_fhan(float x1, float x2, float r, float h, float h0)
  *       不再接受外部传入的dt。这适用于RTOS固定频率调用的场景，
  *       可以消除时间抖动对积分的影响。
  */
-float lib_ladrc::td_update(td_t *td, float target) {
+float lib_ladrc2::td_update(td_t *td, float target) {
     float x1_error = td->x1 - target;               // 计算当前跟踪误差
 
     /* 使用固化的采样周期td->h进行计算，不再依赖外部传入的dt */
@@ -500,7 +520,7 @@ float lib_ladrc::td_update(td_t *td, float target) {
  * @note 在系统复位、模式切换或故障恢复时调用，
  *       将TD状态重置为指定值，避免历史状态影响新的控制过程
  */
-void lib_ladrc::td_reset(td_t *td, float init_value) {
+void lib_ladrc2::td_reset(td_t *td, float init_value) {
     td->x1 = init_value;                            // 位置重置为初始值
     td->x2 = 0.0f;                                  // 速度重置为0
 }
