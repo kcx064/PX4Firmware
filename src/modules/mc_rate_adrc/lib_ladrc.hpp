@@ -88,7 +88,7 @@ public:
 		   float td_n,
 		   float td_max_x2);
 
-	float calc(float target, float measure, float dt);
+	float calc(float target, float measure, float dt, bool landed, bool ground_contact);
 	void param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw);
 	first_order_ladrc_t ctl_param;
 };
@@ -248,7 +248,7 @@ void lib_ladrc::reset(float beta1,
  *       4. 扰动补偿得到实际控制量
  *       5. 输出限幅和抗积分饱和处理
  */
-float lib_ladrc::calc(float target, float measure, float dt)
+float lib_ladrc::calc(float target, float measure, float dt, bool landed, bool ground_contact)
 {
 	/*
 	* 一阶LADRC原理：
@@ -286,7 +286,14 @@ float lib_ladrc::calc(float target, float measure, float dt)
 	float dx1 = ctl_param.x2 + ctl_param.b * ctl_param.pre_out + ctl_param.beta1 * error;
 							// 输出估计的微分
 							// = 扰动估计 + b*控制量 + 修正项
-	float dx2 = ctl_param.beta2 * error;            // 扰动估计的微分（假设扰动变化缓慢）
+	float dx2;
+	if(!landed)
+	{
+		dx2 = ctl_param.beta2 * error;            // 扰动估计的微分（假设扰动变化缓慢）
+	}else{//检测到在飞机在地面，那么dx2持续置0，主要用于防止解锁后，飞机未离地前的扰动估计异常
+		dx2 = 0.f;
+	}
+
 
 	/* 更新状态估计值(欧拉积分，乘以dt) */
 	if(ctl_param.dt > 0.0001f){				//如果大于0.0001f，为有效值。那么使用设定的dt，否则使用动态的dt
@@ -296,6 +303,24 @@ float lib_ladrc::calc(float target, float measure, float dt)
 		ctl_param.x1 += dx1 * dt;			// 离散积分更新输出估计
 		ctl_param.x2 += dx2 * dt;			// 离散积分更新扰动估计
 	}
+
+	if(ground_contact){//检测到飞机接触地面的时候，每次衰减x2， 也就是衰减扰动估计值防止其过大导致降落时候出现额外控制量
+		ctl_param.x2 = ctl_param.x2 * 0.6f;
+	}
+
+	/**
+	 * x2做直接饱和处理，最大值不超过±10.0
+	 */
+	if(ctl_param.x2 > 10.f)
+	{
+		ctl_param.x2 = 10.f;
+	}
+	if(ctl_param.x2 < -10.f)
+	{
+		ctl_param.x2 = -10.f;
+	}
+
+
 
 
 	/* 步骤2: 计算控制量 */

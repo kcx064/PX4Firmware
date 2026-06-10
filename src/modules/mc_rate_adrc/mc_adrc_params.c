@@ -20,6 +20,36 @@
 PARAM_DEFINE_FLOAT(ADRC_STEP, 0.f);
 
 /**
+ * ROLL ADRC ENABLE
+ *
+ *
+ * @value 0 Disbale
+ * @value 1 Enable
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_INT32(ADRC_ROLL, 0);
+
+/**
+ * PITCH ADRC ENABLE
+ *
+ *
+ * @value 0 Disbale
+ * @value 1 Enable
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_INT32(ADRC_PITCH, 0);
+
+/**
+ * YAW ADRC ENABLE
+ *
+ *
+ * @value 0 Disbale
+ * @value 1 Enable
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_INT32(ADRC_YAW, 0);
+
+/**
  * Observer bandwidth
  *
  * Observer bandwidth.

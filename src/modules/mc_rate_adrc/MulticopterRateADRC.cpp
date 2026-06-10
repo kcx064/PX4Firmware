@@ -229,6 +229,7 @@ MulticopterRateADRC::Run()
 			if (_vehicle_land_detected_sub.copy(&vehicle_land_detected)) {
 				_landed = vehicle_land_detected.landed;
 				_maybe_landed = vehicle_land_detected.maybe_landed;
+				_ground_contact = vehicle_land_detected.ground_contact;
 			}
 		}
 
@@ -308,10 +309,20 @@ MulticopterRateADRC::Run()
 			}
 
 			// run rate controller
-			// const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
-			adrc_control_roll = adrc_roll.calc(_rates_setpoint(0), rates(0), dt);
-			adrc_control_pitch = adrc_pitch.calc(_rates_setpoint(1), rates(1), dt);
-			adrc_control_yaw = adrc_yaw.calc(_rates_setpoint(2), rates(2), dt);
+			const Vector3f att_control = _rate_control.update(rates, _rates_setpoint, angular_accel, dt, _maybe_landed || _landed);
+			adrc_control_roll = adrc_roll.calc(_rates_setpoint(0), rates(0), dt, _maybe_landed || _landed, _ground_contact);
+			adrc_control_pitch = adrc_pitch.calc(_rates_setpoint(1), rates(1), dt, _maybe_landed || _landed, _ground_contact);
+			adrc_control_yaw = adrc_yaw.calc(_rates_setpoint(2), rates(2), dt, _maybe_landed || _landed, _ground_contact);
+
+			adrc_status_s adrc_status{};
+			adrc_status.timestamp = hrt_absolute_time();
+			adrc_status.x1[0] = adrc_roll.ctl_param.x1;
+			adrc_status.x1[1] = adrc_pitch.ctl_param.x1;
+			adrc_status.x1[2] = adrc_yaw.ctl_param.x1;
+			adrc_status.est_disturbance[0] = adrc_roll.ctl_param.x2;//对于1阶adrc，x2代表扰动估计
+			adrc_status.est_disturbance[1] = adrc_pitch.ctl_param.x2;
+			adrc_status.est_disturbance[2] = adrc_yaw.ctl_param.x2;
+			_adrc_status_pub.publish(adrc_status);
 
 			// vehicle_attitude_setpoint_s vehicle_attitude_setpoint;
 			// if(_vehicle_attitude_setpoint_sub.update(&vehicle_attitude_setpoint))
@@ -332,16 +343,29 @@ MulticopterRateADRC::Run()
 			vehicle_thrust_setpoint_s vehicle_thrust_setpoint{};
 			vehicle_torque_setpoint_s vehicle_torque_setpoint{};
 
+
 			_thrust_setpoint.copyTo(vehicle_thrust_setpoint.xyz);
-			// vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(att_control(0)) ? att_control(0) : 0.f;
-			vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(adrc_control_roll) ? adrc_control_roll : 0.f; //ladrc
+			if(_param_adrc_roll.get())
+			{
+				vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(adrc_control_roll) ? adrc_control_roll : 0.f; //ladrc
+			}else{
+				vehicle_torque_setpoint.xyz[0] = PX4_ISFINITE(att_control(0)) ? att_control(0) : 0.f;
+			}
 
-			// vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
-			vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(adrc_control_pitch) ? adrc_control_pitch : 0.f; //ladrc
+			if(_param_adrc_pitch.get())
+			{
+				vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(adrc_control_pitch) ? adrc_control_pitch : 0.f; //ladrc
+			}else{
+				vehicle_torque_setpoint.xyz[1] = PX4_ISFINITE(att_control(1)) ? att_control(1) : 0.f;
+			}
 
-			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.f;
-			vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw) ? adrc_control_yaw : 0.f; //ladrc
-			// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw2) ? adrc_control_yaw2 : 0.f; //ladrc2
+			if(_param_adrc_yaw.get())
+			{
+				vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw) ? adrc_control_yaw : 0.f; //ladrc
+				// vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(adrc_control_yaw2) ? adrc_control_yaw2 : 0.f; //ladrc2
+			}else{
+				vehicle_torque_setpoint.xyz[2] = PX4_ISFINITE(att_control(2)) ? att_control(2) : 0.f;
+			}
 
 			// scale setpoints by battery status if enabled
 			if (_param_mc_bat_scale_en.get()) {

@@ -64,6 +64,8 @@
 #include <uORB/topics/vehicle_attitude_setpoint.h>
 #include <uORB/topics/trajectory_setpoint.h>
 
+#include <uORB/topics/adrc_status.h>
+
 #include "lib_ladrc.hpp"
 #include "lib_ladrc2.hpp"
 
@@ -162,11 +164,14 @@ private:
 	uORB::Publication<vehicle_torque_setpoint_s>	_vehicle_torque_setpoint_pub;
 	uORB::Publication<vehicle_thrust_setpoint_s>	_vehicle_thrust_setpoint_pub;
 
+	uORB::Publication<adrc_status_s> 		_adrc_status_pub{ORB_ID(adrc_status)};
+
 	vehicle_control_mode_s	_vehicle_control_mode{};
 	vehicle_status_s	_vehicle_status{};
 
 	bool _landed{true};
 	bool _maybe_landed{true};
+	bool _ground_contact{true};
 
 	hrt_abstime _last_run{0};
 
@@ -238,6 +243,9 @@ private:
 		(ParamFloat<px4::params::YAW2_SAT_K>) _param_yaw_sat_k2,
 		(ParamFloat<px4::params::YAW2_SAT_TAU>) _param_yaw_sat_tau2,
 
-		(ParamFloat<px4::params::ADRC_STEP>) _param_adrc_step
+		(ParamFloat<px4::params::ADRC_STEP>) _param_adrc_step,
+		(ParamInt<px4::params::ADRC_ROLL>) _param_adrc_roll,
+		(ParamInt<px4::params::ADRC_PITCH>) _param_adrc_pitch,
+		(ParamInt<px4::params::ADRC_YAW>) _param_adrc_yaw
 	)
 };

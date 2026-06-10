@@ -144,6 +144,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("redundancy_detector", 100);
 	add_topic("redundancy_detector_second", 100);
 	add_topic("velocity_ctrl_status", 100);
+	add_topic("adrc_status", 20);
 
 
 	// multi topics
