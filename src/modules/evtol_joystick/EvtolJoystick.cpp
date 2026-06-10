@@ -126,14 +126,14 @@ void EvtolJoystick::Run()
 			if(vehicle_status.arming_state == vehicle_status_s::ARMING_STATE_ARMED)
 			{//目前是解锁状态，那么上锁
 				cmd.param1 = 0.0f;//上锁
-				cmd.target_system = 1;
+				cmd.target_system = _param_mav_sys_id.get();
 				cmd.target_component = 1;
 				cmd.timestamp = hrt_absolute_time();
 				// 发布到vehicle_command主题
 				_vehicle_cmd_pub.publish(cmd);
 			}else{//目前是上锁状态，那么解锁
 				cmd.param1 = 1.0f;//1.0表示解锁
-				cmd.target_system = 1;
+				cmd.target_system = _param_mav_sys_id.get();
 				cmd.target_component = 1;
 				cmd.timestamp = hrt_absolute_time();
 				// 发布到vehicle_command主题

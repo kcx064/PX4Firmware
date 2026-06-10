@@ -120,7 +120,8 @@ private:
 	DEFINE_PARAMETERS(
 		// (ParamInt<px4::params::SYS_AUTOSTART>) _param_sys_autostart,   /**< example parameter */
 		// (ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig  /**< another parameter */
-		(ParamInt<px4::params::STK_ARM>) _param_stkarm_channel
+		(ParamInt<px4::params::STK_ARM>) _param_stkarm_channel,
+		(ParamInt<px4::params::MAV_SYS_ID>) _param_mav_sys_id
 	)
 
 };
