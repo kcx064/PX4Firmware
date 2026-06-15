@@ -224,18 +224,21 @@ private:
 		(ParamFloat<px4::params::ROLL_B>) _param_roll_b,
 		(ParamFloat<px4::params::ROLL_SAT_K>) _param_roll_sat_k,
 		(ParamFloat<px4::params::ROLL_SAT_TAU>) _param_roll_sat_tau,
+		(ParamFloat<px4::params::ROLL_DST_MAX>) _param_roll_dst_max,
 
 		(ParamFloat<px4::params::PITCH_BW_O>) _param_pitch_bw_obs,
 		(ParamFloat<px4::params::PITCH_BW_C>) _param_pitch_bw_ctl,
 		(ParamFloat<px4::params::PITCH_B>) _param_pitch_b,
 		(ParamFloat<px4::params::PITCH_SAT_K>) _param_pitch_sat_k,
 		(ParamFloat<px4::params::PITCH_SAT_TAU>) _param_pitch_sat_tau,
+		(ParamFloat<px4::params::PITCH_DST_MAX>) _param_pitch_dst_max,
 
 		(ParamFloat<px4::params::YAW_BW_O>) _param_yaw_bw_obs,
 		(ParamFloat<px4::params::YAW_BW_C>) _param_yaw_bw_ctl,
 		(ParamFloat<px4::params::YAW_B>) _param_yaw_b,
 		(ParamFloat<px4::params::YAW_SAT_K>) _param_yaw_sat_k,
 		(ParamFloat<px4::params::YAW_SAT_TAU>) _param_yaw_sat_tau,
+		(ParamFloat<px4::params::YAW_DST_MAX>) _param_yaw_dst_max,
 
 		(ParamFloat<px4::params::YAW2_BW_O>) _param_yaw_bw_obs2,
 		(ParamFloat<px4::params::YAW2_BW_C>) _param_yaw_bw_ctl2,

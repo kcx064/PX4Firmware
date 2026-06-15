@@ -46,6 +46,8 @@ private:
 
 		// 输出限制
 		float max_output;   // 输出限幅值（如PWM最大值）
+		float dst_max;
+		int8_t climb_cnt; //dx2单向变化计数
 
 		// 抗积分饱和
 		float k_aw;         // 抗积分饱和增益（0表示不使用，建议值1.0~3.0）
@@ -68,6 +70,7 @@ public:
 	lib_ladrc(/* args */);
 	~lib_ladrc();
 	void init(float max_output,
+		  float dst_max,
 		  float beta1,
 		  float beta2,
 		  float kp,
@@ -89,7 +92,7 @@ public:
 		   float td_max_x2);
 
 	float calc(float target, float measure, float dt, bool landed, bool ground_contact);
-	void param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw);
+	void param_update(float max_output, float dst_max, float beta1, float beta2, float kp, float b, float dt, float k_aw);
 	first_order_ladrc_t ctl_param;
 };
 
@@ -101,9 +104,10 @@ lib_ladrc::~lib_ladrc()
 {
 }
 
-void lib_ladrc::param_update(float max_output, float beta1, float beta2, float kp, float b, float dt, float k_aw)
+void lib_ladrc::param_update(float max_output, float dst_max, float beta1, float beta2, float kp, float b, float dt, float k_aw)
 {
 	ctl_param.max_output = max_output;
+	ctl_param.dst_max = dst_max;
 
 	/* 初始化ESO参数 */
 	ctl_param.beta1 = beta1;
@@ -135,6 +139,7 @@ void lib_ladrc::param_update(float max_output, float beta1, float beta2, float k
  * @param td_max_x2  TD最大速度限制(0表示不限制) - 防止设定值跳变过大导致系统冲击
  */
 void lib_ladrc::init(float max_output,
+		     float dst_max,
 		     float beta1,
 		     float beta2,
 		     float kp,
@@ -160,6 +165,8 @@ void lib_ladrc::init(float max_output,
 
 	/* 初始化输出限制 */
 	ctl_param.max_output = max_output;
+	ctl_param.dst_max = dst_max;
+	ctl_param.climb_cnt = 0;
 
 	/* 初始化抗积分饱和参数 */
 	ctl_param.k_aw = k_aw;
@@ -213,6 +220,7 @@ void lib_ladrc::reset(float beta1,
 	ctl_param.x1 = 0.0f;
 	ctl_param.x2 = 0.0f;
 	ctl_param.pre_out = 0.0f;
+	ctl_param.climb_cnt = 0;
 
 	/* 重新配置TD参数 - 使用参数固化模式 */
 	if (td_r > 0.0f) {
@@ -290,6 +298,29 @@ float lib_ladrc::calc(float target, float measure, float dt, bool landed, bool g
 	if(!landed)
 	{
 		dx2 = ctl_param.beta2 * error;            // 扰动估计的微分（假设扰动变化缓慢）
+		/**
+		 * 暂时限制dx2的幅值为x2的允许的最大值的0.5，抑制因异常导致的x2反复跳动
+		 */
+		// if(dx2 > 0.5f*ctl_param.dst_max)
+		// {
+		// 	dx2 = 0.5f*ctl_param.dst_max;
+		// }
+
+		// if(dx2 < -0.5f*ctl_param.dst_max)
+		// {
+		// 	dx2 = -0.5f*ctl_param.dst_max;
+		// }
+
+		if(dx2 > 0){
+			ctl_param.climb_cnt += 1;
+		}
+		if(dx2 < 0){
+			ctl_param.climb_cnt -= 1;
+		}
+		// if(ctl_param.climb_cnt > 10 || ctl_param.climb_cnt < -10){
+		// 	dx2 = 0;
+		// }
+
 	}else{//检测到在飞机在地面，那么dx2持续置0，主要用于防止解锁后，飞机未离地前的扰动估计异常
 		dx2 = 0.f;
 	}
@@ -309,15 +340,15 @@ float lib_ladrc::calc(float target, float measure, float dt, bool landed, bool g
 	}
 
 	/**
-	 * x2做直接饱和处理，最大值不超过±10.0
+	 * x2做直接饱和处理，最大值不超过±5.0
 	 */
-	if(ctl_param.x2 > 10.f)
+	if(ctl_param.x2 > ctl_param.dst_max)
 	{
-		ctl_param.x2 = 10.f;
+		ctl_param.x2 = ctl_param.dst_max;
 	}
-	if(ctl_param.x2 < -10.f)
+	if(ctl_param.x2 < -ctl_param.dst_max)
 	{
-		ctl_param.x2 = -10.f;
+		ctl_param.x2 = -ctl_param.dst_max;
 	}
 
 
@@ -335,6 +366,7 @@ float lib_ladrc::calc(float target, float measure, float dt, bool landed, bool g
 
 	/* 计算名义控制量u0 */
 	float u0 = ctl_param.kp * (td_target - ctl_param.x1);
+	// float u0 = ctl_param.kp * (td_target - measure); //直接使用测量值
 							// P控制器：u0 = kp * 误差
 
 	/* 抗积分饱和处理 */

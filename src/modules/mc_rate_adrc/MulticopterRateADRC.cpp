@@ -76,21 +76,21 @@ MulticopterRateADRC::init()
 	roll_gain_b = _param_roll_b.get();
 	roll_sat_k = _param_roll_sat_k.get();
 	roll_sat_tau = _param_roll_sat_tau.get();
-	adrc_roll.init(roll_sat_tau, 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k, 0.0f, 3.0f, 0.0f);
+	adrc_roll.init(roll_sat_tau, _param_roll_dst_max.get(), 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k, 0.0f, 3.0f, 0.0f);
 
 	pitch_bw_ctl = _param_pitch_bw_ctl.get();
 	pitch_bw_obs = _param_pitch_bw_obs.get();
 	pitch_gain_b = _param_pitch_b.get();
 	pitch_sat_k = _param_pitch_sat_k.get();
 	pitch_sat_tau = _param_pitch_sat_tau.get();
-	adrc_pitch.init(pitch_sat_tau, 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k, 0.0f, 3.0f, 0.0f);
+	adrc_pitch.init(pitch_sat_tau, _param_pitch_dst_max.get(), 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k, 0.0f, 3.0f, 0.0f);
 
 	yaw_bw_ctl = _param_yaw_bw_ctl.get();
 	yaw_bw_obs = _param_yaw_bw_obs.get();
 	yaw_gain_b = _param_yaw_b.get();
 	yaw_sat_k = _param_yaw_sat_k.get();
 	yaw_sat_tau = _param_yaw_sat_tau.get();
-	adrc_yaw.init(yaw_sat_tau, 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k, 0.0f, 3.0f, 0.0f);
+	adrc_yaw.init(yaw_sat_tau, _param_yaw_dst_max.get(), 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k, 0.0f, 3.0f, 0.0f);
 
 	yaw_bw_ctl2 = _param_yaw_bw_ctl2.get();
 	yaw_bw_obs2 = _param_yaw_bw_obs2.get();
@@ -114,21 +114,21 @@ MulticopterRateADRC::parameters_updated()
 	roll_gain_b = _param_roll_b.get();
 	roll_sat_k = _param_roll_sat_k.get();
 	roll_sat_tau = _param_roll_sat_tau.get();
-	adrc_roll.param_update(roll_sat_tau, 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k);
+	adrc_roll.param_update(roll_sat_tau, _param_roll_dst_max.get(), 2*roll_bw_obs, roll_bw_obs*roll_bw_obs, roll_bw_ctl, roll_gain_b, adrc_step, roll_sat_k);
 
 	pitch_bw_ctl = _param_pitch_bw_ctl.get();
 	pitch_bw_obs = _param_pitch_bw_obs.get();
 	pitch_gain_b = _param_pitch_b.get();
 	pitch_sat_k = _param_pitch_sat_k.get();
 	pitch_sat_tau = _param_pitch_sat_tau.get();
-	adrc_pitch.param_update(pitch_sat_tau, 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k);
+	adrc_pitch.param_update(pitch_sat_tau, _param_pitch_dst_max.get(), 2*pitch_bw_obs, pitch_bw_obs*pitch_bw_obs, pitch_bw_ctl, pitch_gain_b, adrc_step, pitch_sat_k);
 
 	yaw_bw_ctl = _param_yaw_bw_ctl.get();
 	yaw_bw_obs = _param_yaw_bw_obs.get();
 	yaw_gain_b = _param_yaw_b.get();
 	yaw_sat_k = _param_yaw_sat_k.get();
 	yaw_sat_tau = _param_yaw_sat_tau.get();
-	adrc_yaw.param_update(yaw_sat_tau, 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k);
+	adrc_yaw.param_update(yaw_sat_tau, _param_yaw_dst_max.get(), 2*yaw_bw_obs, yaw_bw_obs*yaw_bw_obs, yaw_bw_ctl, yaw_gain_b, adrc_step, yaw_sat_k);
 
 
 	yaw_bw_ctl2 = _param_yaw_bw_ctl2.get();
@@ -319,6 +319,9 @@ MulticopterRateADRC::Run()
 			adrc_status.x1[0] = adrc_roll.ctl_param.x1;
 			adrc_status.x1[1] = adrc_pitch.ctl_param.x1;
 			adrc_status.x1[2] = adrc_yaw.ctl_param.x1;
+			adrc_status.x2[0] = adrc_roll.ctl_param.error; //对于一阶LADRC, x2暂时用于存储测量值和估计值的差
+			adrc_status.x2[1] = adrc_pitch.ctl_param.error;
+			adrc_status.x2[2] = adrc_yaw.ctl_param.error;
 			adrc_status.est_disturbance[0] = adrc_roll.ctl_param.x2;//对于1阶adrc，x2代表扰动估计
 			adrc_status.est_disturbance[1] = adrc_pitch.ctl_param.x2;
 			adrc_status.est_disturbance[2] = adrc_yaw.ctl_param.x2;

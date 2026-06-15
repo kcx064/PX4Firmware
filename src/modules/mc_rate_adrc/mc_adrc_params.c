@@ -117,6 +117,17 @@ PARAM_DEFINE_FLOAT(ROLL_SAT_K, 1.f);
 PARAM_DEFINE_FLOAT(ROLL_SAT_TAU, 1.f);
 
 /**
+ * Roll disturbance max
+ *
+ * @min 0.0
+ * @max 20.0
+ * @decimal 2
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(ROLL_DST_MAX, 5.f);
+
+/**
  * Observer bandwidth
  *
  * Observer bandwidth.
@@ -182,6 +193,17 @@ PARAM_DEFINE_FLOAT(PITCH_SAT_K, 1.f);
  * @group Multicopter ADRC
  */
 PARAM_DEFINE_FLOAT(PITCH_SAT_TAU, 1.f);
+
+/**
+ * Pitch disturbance max
+ *
+ * @min 0.0
+ * @max 20.0
+ * @decimal 2
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(PITCH_DST_MAX, 5.f);
 
 
 
@@ -252,6 +274,17 @@ PARAM_DEFINE_FLOAT(YAW_SAT_K, 1.f);
  * @group Multicopter ADRC
  */
 PARAM_DEFINE_FLOAT(YAW_SAT_TAU, 1.0f);
+
+/**
+ * Pitch disturbance max
+ *
+ * @min 0.0
+ * @max 20.0
+ * @decimal 2
+ * @increment 5
+ * @group Multicopter ADRC
+ */
+PARAM_DEFINE_FLOAT(YAW_DST_MAX, 10.f);
 
 /**
  * Observer bandwidth YAW
