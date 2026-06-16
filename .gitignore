@@ -108,3 +108,6 @@ src/systemcmds/topic_listener/listener_generated.cpp
 
 # colcon
 log/
+
+
+src/modules/evtol_canard/dsdl_generated

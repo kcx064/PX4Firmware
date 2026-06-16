@@ -83,3 +83,9 @@
 [submodule "boards/modalai/voxl2/libfc-sensor-api"]
 	path = boards/modalai/voxl2/libfc-sensor-api
 	url = https://gitlab.com/voxl-public/voxl-sdk/core-libs/libfc-sensor-api.git
+[submodule "src/modules/evtol_canard/dsdl"]
+	path = src/modules/evtol_canard/dsdl
+	url = https://github.com/DroneCAN/DSDL
+[submodule "src/modules/evtol_canard/dronecan_dsdlc"]
+	path = src/modules/evtol_canard/dronecan_dsdlc
+	url = https://github.com/DroneCAN/dronecan_dsdlc
