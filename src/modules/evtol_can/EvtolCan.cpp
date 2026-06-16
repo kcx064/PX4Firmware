@@ -176,9 +176,9 @@ bool EvtolCan::init()
 		{
 			for(size_t i = 0; i<br_msg_id_num; i++)
 			{
-				AssignGlobalBufferForID(br->get_can_module(), br->get_msg_id()[i], 1);
+				AssignGlobalBufferForID(br->get_can_module(), br->get_msg_id()[i], br->get_frame_type());
 			}
-			PX4_INFO("CAN receive buffer %u(need %u)", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum);
+			PX4_INFO("CAN receive buffer %u(need %u), frame_type %u", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum, br->get_frame_type());
 		}else{
 			mavlink_log_warning(&_mavlink_log_pub, "CAN receive buffer %u(need %u) is too low", MW_NUM_CAN_RECEIVE_RAW, msg_id_num_sum);
 		}

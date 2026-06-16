@@ -4,6 +4,7 @@
 #include <containers/List.hpp>
 #include <string.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/drivers/device/Device.hpp>
 #include <stdio.h>
 
 
@@ -26,6 +27,7 @@ public:
 	virtual const uint32_t* get_msg_id() = 0;
 	virtual size_t get_msg_id_num() = 0;
 	virtual uint8_t get_can_module() = 0;//CANModule
+	virtual uint8_t get_frame_type(){return 1;};
 
 	virtual void msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, uint8_t len) {};
 
