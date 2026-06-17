@@ -70,6 +70,7 @@ px4_add_module(
 		sensors/lib_uavcan_field_extractor.hpp
 		sensors/lib_uavcan_parser.hpp
 		sensors/muniu_status.hpp
+		sensors/nalei_status.hpp
 	INCLUDES
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include

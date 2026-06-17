@@ -8,6 +8,7 @@
 #include "redundancy_detector.hpp"
 #include "pmu_uavcan.hpp"
 #include "muniu_status.hpp"
+#include "nalei_status.hpp"
 
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
@@ -61,6 +62,13 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 	if (can_sub_muniu != 0)
 	{
 		list.add(new muniu_status());
+	}
+
+	int32_t can_sub_malei = 1;
+	param_get(param_find("SUB_NALEI"), &can_sub_malei);
+	if (can_sub_malei != 0)
+	{
+		list.add(new nalei_status());
 	}
 
 

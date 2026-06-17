@@ -224,6 +224,17 @@ PARAM_DEFINE_INT32(SUB_PMU, 0);
 PARAM_DEFINE_INT32(SUB_MUNIU, 0);
 
 /**
+ * NALEI rader Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_NALEI, 0);
+
+/**
  * The Node ID used to distinguish between the primary and secondary autopilot
  *
  * @min 1

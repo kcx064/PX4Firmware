@@ -142,8 +142,8 @@ private:
 	float parse_height(uint8_t high_byte, uint8_t low_byte);
 	float parse_speed(uint8_t high_byte, uint8_t low_byte);
 
-	distance_sensor_s _distance_sensor{};
-	uORB::PublicationMulti<distance_sensor_s> _distance_sensor_pub{ORB_ID(distance_sensor)};
+	// distance_sensor_s _distance_sensor{};
+	// uORB::PublicationMulti<distance_sensor_s> _distance_sensor_pub{ORB_ID(distance_sensor)};
 
 	PX4Rangefinder rangefinder{0 ,distance_sensor_s::ROTATION_DOWNWARD_FACING};
 	device::Device::DeviceId device_id{};
