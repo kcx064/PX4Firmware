@@ -278,7 +278,7 @@ void EvtolCan::Run()
 			{
 				_msg_id = br->get_msg_id()[i];
 				memset(rxData, 0, sizeof(rxData));
-				if(!ReceiveMessages_By_ID(&can_module, &rxData[0], _msg_id, 1, &remote, &Length))
+				if(!ReceiveMessages_By_ID(&can_module, &rxData[0], _msg_id, br->get_frame_type(), &remote, &Length))
 				{
 					br->msg_cb(can_module, _msg_id, &rxData[0], Length);
 				}

@@ -52,9 +52,9 @@ public:
 
 	static constexpr uint32_t msg_id_list[] ={
 		(0x055),
-		(0x055),
-		(0x055),
-		(0x055),
+		(0x056),
+		(0x057),
+		(0x058),
 	};
 	static constexpr size_t MSG_ID_COUNT = sizeof(msg_id_list)/sizeof(msg_id_list[0]);
 
@@ -176,31 +176,34 @@ void muniu_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, u
 	switch (current_frame)
 	{
 		case receive_order_t::FIRST:
-			if(rxData[0] == 0xEB ){
-
+			if(msg_id == 0x55 ){
 				memcpy(&can_data.packets[0].data[0], rxData, 8);
 				current_frame = receive_order_t::SECOND;
 			}
 			break;
 
 		case receive_order_t::SECOND:
-
-			memcpy(&can_data.packets[1].data[0], rxData, 8);
-			current_frame = receive_order_t::THIRD;
+			if(msg_id == 0x56 ){
+				memcpy(&can_data.packets[1].data[0], rxData, 8);
+				current_frame = receive_order_t::THIRD;
+			}
 			break;
 
 		case receive_order_t::THIRD:
-
-			memcpy(&can_data.packets[2].data[0], rxData, 8);
-			current_frame = receive_order_t::FOURTH;
+			if(msg_id == 0x57 ){
+				memcpy(&can_data.packets[2].data[0], rxData, 8);
+				current_frame = receive_order_t::FOURTH;
+			}
 			break;
 
 		case receive_order_t::FOURTH:
-
-			memcpy(&can_data.packets[3].data[0], rxData, 8);
-			//完整的帧处理完毕，开始提取有效数据
-			process_can_data();
-			current_frame = receive_order_t::FIRST;
+			if(msg_id == 0x58 )
+			{
+				memcpy(&can_data.packets[3].data[0], rxData, 8);
+				//完整的帧处理完毕，开始提取有效数据
+				process_can_data();
+				current_frame = receive_order_t::FIRST;
+			}
 			break;
 
 		default:
@@ -227,19 +230,19 @@ void muniu_status::process_can_data()
 	}
 
 	// 解析数据
-	float altitude_24g = parse_height(can_data.fields.high1_h, can_data.fields.high1_l);
-	float speed_24g = parse_speed(can_data.fields.speed1_h, can_data.fields.speed1_l);
+	// float altitude_24g = parse_height(can_data.fields.high1_h, can_data.fields.high1_l);
+	// float speed_24g = parse_speed(can_data.fields.speed1_h, can_data.fields.speed1_l);
 
-	float altitude_60g = parse_height(can_data.fields.high2_h, can_data.fields.high2_l);
-	float speed_60g = parse_speed(can_data.fields.speed2_h, can_data.fields.speed2_l);
+	// float altitude_60g = parse_height(can_data.fields.high2_h, can_data.fields.high2_l);
+	// float speed_60g = parse_speed(can_data.fields.speed2_h, can_data.fields.speed2_l);
 
 	float altitude_fusion = parse_height(can_data.fields.high3_h, can_data.fields.high3_l);
-	float speed_fusion = parse_speed(can_data.fields.speed3_h, can_data.fields.speed3_l);
+	// float speed_fusion = parse_speed(can_data.fields.speed3_h, can_data.fields.speed3_l);
 
 	// 输出结果
-	PX4_INFO("24GHz height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_24g), static_cast<double>(speed_24g));
-	PX4_INFO("60GHz height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_60g), static_cast<double>(speed_60g));
-	PX4_INFO("fused height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_fusion), static_cast<double>(speed_fusion));
+	// PX4_INFO("24GHz height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_24g), static_cast<double>(speed_24g));
+	// PX4_INFO("60GHz height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_60g), static_cast<double>(speed_60g));
+	// PX4_INFO("fused height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_fusion), static_cast<double>(speed_fusion));
 
 	// _distance_sensor.timestamp = hrt_absolute_time();
 	rangefinder.update(hrt_absolute_time(), altitude_fusion, can_data.fields.snr3 > 0 ? 1:0);
