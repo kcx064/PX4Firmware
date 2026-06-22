@@ -6,12 +6,14 @@
 
 // using namespace device;
 
-class muniu_status : public CanSensorBridgeBase
+class muniu_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	muniu_status(){};
+	muniu_status() :
+		ModuleParams(nullptr)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -148,6 +150,11 @@ private:
 	PX4Rangefinder rangefinder{0 ,distance_sensor_s::ROTATION_DOWNWARD_FACING};
 	device::Device::DeviceId device_id{};
 
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::EN_MUNIU>) _param_en_muniu
+	)//最后一行没有逗号
+
 };
 
 const char *const muniu_status::NAME = "muniu_radar";
@@ -245,7 +252,7 @@ void muniu_status::process_can_data()
 	// PX4_INFO("fused height: %.2f m, speed: %.2f m/s\n", static_cast<double>(altitude_fusion), static_cast<double>(speed_fusion));
 
 	// _distance_sensor.timestamp = hrt_absolute_time();
-	rangefinder.update(hrt_absolute_time(), altitude_fusion, can_data.fields.snr3 > 0 ? 1:0);
+	rangefinder.update(hrt_absolute_time(), altitude_fusion, (can_data.fields.snr3 > 0 ? 100:0)* _param_en_muniu.get());
 }
 
 // 校验函数

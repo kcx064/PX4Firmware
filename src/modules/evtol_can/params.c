@@ -224,6 +224,18 @@ PARAM_DEFINE_INT32(SUB_PMU, 0);
 PARAM_DEFINE_INT32(SUB_MUNIU, 0);
 
 /**
+ * MUNIU rader EN
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(EN_MUNIU, 1);
+
+/**
  * NALEI rader Subscribe
  *
  * @min 0
@@ -235,6 +247,18 @@ PARAM_DEFINE_INT32(SUB_MUNIU, 0);
 PARAM_DEFINE_INT32(SUB_NALEI, 0);
 
 /**
+ * NALEI rader EN
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(EN_NALEI, 1);
+
+/**
  * The Node ID used to distinguish between the primary and secondary autopilot
  *
  * @min 1
@@ -242,6 +266,7 @@ PARAM_DEFINE_INT32(SUB_NALEI, 0);
  * @value 1 Primary Autopilot
  * @value 2 Secondary Autopilot
  * @group DB
+ * @reboot_required true
  */
 PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
 

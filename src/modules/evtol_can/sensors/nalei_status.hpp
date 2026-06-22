@@ -5,12 +5,14 @@
 
 #include <uORB/topics/distance_sensor.h>
 
-class nalei_status : public CanSensorBridgeBase
+class nalei_status : public CanSensorBridgeBase, public ModuleParams
 {
 public:
 	static const char *const NAME;
 
-	nalei_status(){};
+	nalei_status() :
+		ModuleParams(nullptr)
+	{};
 
 	const char *get_name() const override { return NAME; }
 
@@ -73,6 +75,11 @@ private:
 
 	float float16_to_float32(uint16_t f);
 
+	// Parameters
+	DEFINE_PARAMETERS(
+		(ParamInt<px4::params::EN_NALEI>) _param_en_nalei
+	)//最后一行没有逗号
+
 };
 
 const char *const nalei_status::NAME = "nalei_radar";
@@ -88,8 +95,8 @@ int nalei_status::init()
 	rangefinder.set_rangefinder_type(distance_sensor_s::MAV_DISTANCE_SENSOR_RADAR);
 	rangefinder.set_hfov(0.75);//0.75rad  == 方位43°
 	rangefinder.set_vfov(0.52);//0.52rad  == 俯仰30°
-	rangefinder.set_min_distance(0.3);
-	rangefinder.set_max_distance(500.0);
+	rangefinder.set_min_distance(0.5);
+	rangefinder.set_max_distance(200.0);
 	return 0;
 }
 
@@ -103,7 +110,7 @@ void nalei_status::msg_cb(uint8_t canModule, uint32_t msg_id, uint8_t *rxData, u
 		float_t range = float16_to_float32(static_cast<uint16_t>(_field_info[7].field_val));//提取距离
 
 		rangefinder.set_fov(float16_to_float32(static_cast<uint16_t>(_field_info[4].field_val)));//设置fov
-		rangefinder.update(hrt_absolute_time(), range, _field_info[6].field_val==1? 1:0); //发送并设置可信度 为READING_TYPE_VALID_RANGE才设置为1否则为0
+		rangefinder.update(hrt_absolute_time(), range, (_field_info[6].field_val==1? 100:0)*_param_en_nalei.get()); //发送并设置可信度 为READING_TYPE_VALID_RANGE才设置为1否则为0
 	}
 }
 
