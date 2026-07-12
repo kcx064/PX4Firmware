@@ -1,0 +1,5 @@
+menuconfig MODULES_EVTOL_CANARD
+	bool "evtol_canard"
+	default n
+	---help---
+		Enable support for evtol_canard

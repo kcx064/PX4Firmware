@@ -1,0 +1,333 @@
+/**20250331
+ * Test Battery
+ *
+ *
+ * @unit V
+ * @min 0
+ * @max 53.4
+ * @group DB
+ */
+PARAM_DEFINE_FLOAT(BAT_CELL_V, 22.5f);
+
+/**
+ * Evtol Can Interval
+ *
+ * @unit us
+ * @min 0
+ * @max 1000000
+ * @group DB
+ * @value 10000 100Hz
+ * @value 5000 200Hz
+ * @value 2500 400Hz
+ * @value 1250 800Hz
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(CANRVE_INTERVAL, 5000);
+
+/**
+ * DB Servo Bias
+ *
+ *
+ *
+ * @min -500
+ * @max 500
+ * @group DB
+ */
+PARAM_DEFINE_INT32(DB_SERVO_BIAS, 0);
+
+/**
+ * CAN RATE
+ *
+ * @min 250000
+ * @max 1000000
+ * @group DB
+ * @value 100000 100K
+ * @value 125000 125K
+ * @value 250000 250K
+ * @value 500000 500K
+ * @value 800000 800K
+ * @value 1000000 1M
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(CAN_BITRATE, 1000000);
+
+/**
+ * DB Servo Check
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 Disbale
+ * @value 1 Enable
+ */
+PARAM_DEFINE_INT32(DB_SRV_CHK, 1);
+
+/**
+ * Whether send ESC cmd when disarmed
+ *
+ * @min 0
+ * @max 7
+ * @group DB
+ *
+ * @bit 0 enbale left
+ * @bit 1 enable right
+ * @bit 2 enable rear
+ */
+PARAM_DEFINE_INT32(DB_ESC_SEND, 7);
+
+/**
+ * DB ESC Vendor
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 IntelligenceGull
+ * @value 1 Sinemotion
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(DB_ESC_VDR, 0);
+
+/**
+ * DB Aerial Wearable Enable
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 Disable
+ * @value 1 Enable
+ */
+PARAM_DEFINE_INT32(DB_AW_EN, 0);
+
+/**
+ * HD DCDC power control
+ *
+ * This param will be reset to 0 (WAITE_CMD) after power cmd sent.
+ *
+ * @min 0
+ * @max 1
+ * @group DB
+ * @value 0 WAIE_CMD
+ * @value 1 POWER_OFF
+ * @value 2 POWER_ON
+ * @value 4 RESET
+ */
+PARAM_DEFINE_INT32(DCDC_POW, 0);
+
+/**
+ * HD DCDC address
+ *
+ * for changing dcdc id
+ *
+ * @min 1
+ * @max 254
+ * @group DB
+ */
+PARAM_DEFINE_INT32(DCDC_ADDR, 1);
+
+/**
+ * DC Converter Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_DCDC, 0);
+
+/**
+ * Sinemotion ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_SM_ESC, 0);
+
+/**
+ * UAVCAN ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_UAVCAN_ESC, 0);
+
+/**
+ * IntelligenceGull ESC Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_IG_ESC, 0);
+
+/**
+ * Himark Servo Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_HMARK_SERVO, 0);
+
+/**
+ * Fullymax Battery Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_FM_BATT, 0);
+
+/**
+ * Redundancy Detector Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_REDU_DETEC, 1);
+
+/**
+ * UAVCAN PMU Subscribe
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_PMU, 0);
+
+/**
+ * The Node ID used to distinguish between the primary and secondary autopilot
+ *
+ * @min 1
+ * @max 2
+ * @value 1 Primary Autopilot
+ * @value 2 Secondary Autopilot
+ * @group DB
+ */
+PARAM_DEFINE_INT32(EVTOL_NODE_ID, 1);
+
+/**
+ * ESC type
+ *
+ * Select one type of esc, for different esc
+ *
+ * @min 0
+ * @max 9
+ * @value 0 Sinemotion
+ * @value 1 UAVCAN_ESC
+ * @group DB
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(ESC_TYPE, 0);
+
+/**
+ * Current Local node id of t-motor esc
+ *
+ * @min 0
+ * @max 255
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(CUT_NODE_ID, 0);
+
+/**
+ * Target Local node id for t-motor esc
+ *
+ * @min 0
+ * @max 255
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(SET_NODE_ID, 0);
+
+/**
+ * Start esc param set
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB PARAM
+ */
+PARAM_DEFINE_INT32(SET_PARAM, 0);
+
+/**
+ * pitch rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_PITCHRATE_I, 0.02);
+
+/**
+ * roll rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_ROLLRATE_I, 0.02);
+
+/**
+ * yaw rate i
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_YAWRATE_I, 0.08);
+
+/**
+ * B_XY_VEL_I_ACC
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_XY_VEL_I_ACC, 0.4);
+
+/**
+ * B_Z_VEL_I_ACC
+ *
+ * @min 0
+ * @max 10
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(B_Z_VEL_I_ACC, 2.0);
+
+/**
+ * When set t-motor esc param (such as esc ID), please disable throttle output for safety
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB PARAM
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(OUT_THR, 1);
+
+/**
+ * lambda step
+ *
+ * @min 0
+ * @max 1
+ * @group DB PARAM
+ */
+PARAM_DEFINE_FLOAT(LAMBDA_STEP, 0.025);
