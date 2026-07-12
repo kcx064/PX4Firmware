@@ -110,4 +110,4 @@ src/systemcmds/topic_listener/listener_generated.cpp
 log/
 
 
-src/modules/evtol_canard/dsdl_generated
+src/modules/evtol_canard/dsdlc_generated

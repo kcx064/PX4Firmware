@@ -33,6 +33,45 @@
 set(LIBUAVCAN_DIR ${PX4_SOURCE_DIR}/src/drivers/uavcan/libuavcan)
 set(LIBUAVCAN_DIR_DRIVERS ${PX4_SOURCE_DIR}/src/drivers/uavcan/uavcan_drivers)
 
+############################################################################
+#
+# DSDL code generation via the dronecan_dsdlc submodule
+#
+# The dronecan_dsdlc.py script parses the DSDL definitions under dsdl/ and
+# emits C sources/headers into the dsdlc_generated/ subdirectory. The build
+# automatically re-runs the generator whenever a .uavcan file changes.
+#
+set(DSDLC_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/dronecan_dsdlc/dronecan_dsdlc.py)
+set(DSDLC_INPUTS
+	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/ardupilot
+	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/com
+	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/dronecan
+	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/uavcan
+)
+set(DSDLC_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/dsdlc_generated)
+
+# Collect all DSDL input files so the custom command re-runs when they change.
+file(GLOB_RECURSE DSDLC_INPUT_FILES ${CMAKE_CURRENT_SOURCE_DIR}/dsdl *.uavcan)
+
+# Stamp/marker file produced by the generator; used as the custom command output.
+set(DSDLC_STAMP ${DSDLC_OUTPUT_PATH}/include/dronecan_msgs.h)
+
+add_custom_command(
+	OUTPUT ${DSDLC_STAMP}
+	COMMAND ${CMAKE_COMMAND} -E make_directory ${DSDLC_OUTPUT_PATH}
+	COMMAND ${PYTHON_EXECUTABLE} ${DSDLC_COMPILER}
+		--output ${DSDLC_OUTPUT_PATH} ${DSDLC_INPUTS}
+	DEPENDS ${DSDLC_INPUT_FILES} ${DSDLC_COMPILER}
+	COMMENT "Generating DSDL code with dronecan_dsdlc into dsdlc_generated"
+	VERBATIM
+)
+add_custom_target(evtol_canard_dsdlc DEPENDS ${DSDLC_STAMP})
+
+# Generated C sources (compiled as part of the module). Globbed so newly
+# generated files are picked up; a reconfigure may be required after the
+# first generation run to include files created during the build.
+file(GLOB_RECURSE DSDLC_GENERATED_SRCS_FILES ${DSDLC_OUTPUT_PATH}/src/*.c)
+
 px4_add_module(
 	MODULE modules__evtol_canard
 	MAIN evtol_canard
@@ -52,11 +91,14 @@ px4_add_module(
 		can_driver/MW_PX4_CAN_DEVICE.h
 		can_driver/rtwtypes.h
 		canard_stm32h7.hpp
+		${DSDLC_GENERATED_SRCS_FILES}
 
 	INCLUDES
+		${CMAKE_CURRENT_SOURCE_DIR}
 		${LIBUAVCAN_DIR}/libuavcan/include
 		${LIBUAVCAN_DIR_DRIVERS}/stm32h7/driver/include
 		${LIBUAVCAN_DIR}/libuavcan/include/dsdlc_generated
+		${DSDLC_OUTPUT_PATH}/include
 	DEPENDS
 		px4_work_queue
 		mixer_module
