@@ -101,6 +101,7 @@ px4_add_module(
 		${LIBUAVCAN_DIR}/libuavcan/include/dsdlc_generated
 		${DSDLC_OUTPUT_PATH}/include
 	DEPENDS
+		evtol_canard_dsdlc
 		px4_work_queue
 		mixer_module
 	)
