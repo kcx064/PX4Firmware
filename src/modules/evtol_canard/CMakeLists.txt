@@ -45,6 +45,7 @@ set(DSDLC_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/dronecan_dsdlc/dronecan_dsdlc.py)
 set(DSDLC_INPUTS
 	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/ardupilot
 	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/com
+	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/cuav
 	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/dronecan
 	${CMAKE_CURRENT_SOURCE_DIR}/dsdl/uavcan
 )
