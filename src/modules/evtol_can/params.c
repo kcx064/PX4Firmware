@@ -259,6 +259,31 @@ PARAM_DEFINE_INT32(SUB_NALEI, 0);
 PARAM_DEFINE_INT32(EN_NALEI, 1);
 
 /**
+ * JOYSTICK Subscribe
+ *
+ * TS45F9-743ZB
+ *
+ * @min 0
+ * @max 1
+ * @value 0 Disable
+ * @value 1 Enable
+ * @group DB
+ */
+PARAM_DEFINE_INT32(SUB_JOYSTICK, 1);
+
+/**
+ * JOYSTICK CAN ID
+ *
+ * TS45F9-743ZB
+ *
+ * @min 0
+ * @max 2047
+ * @group DB
+ * @reboot_required true
+ */
+PARAM_DEFINE_INT32(JY_CAN_ID, 53);
+
+/**
  * The Node ID used to distinguish between the primary and secondary autopilot
  *
  * @min 1

@@ -9,6 +9,7 @@
 #include "pmu_uavcan.hpp"
 #include "muniu_status.hpp"
 #include "nalei_status.hpp"
+#include "can_joystick.hpp"
 
 void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 {
@@ -71,6 +72,12 @@ void ICanSensorBridge::make_all(List<ICanSensorBridge *> &list)
 		list.add(new nalei_status());
 	}
 
+	int32_t can_sub_joystick = 1;
+	param_get(param_find("SUB_JOYSTICK"), &can_sub_joystick);
+	if (can_sub_joystick != 0)
+	{
+		list.add(new can_joystick());
+	}
 
 }
 
